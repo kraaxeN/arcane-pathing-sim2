@@ -1,355 +1,354 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Arcane ODM Trainer - Outskirts</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      margin: 0; 
-      padding: 20px;
-      display: flex; 
-      flex-direction: row; 
-      justify-content: center;
-      align-items: flex-start;
-      background-image: url('bg.png'); /* Full site background */
-      background-size: cover;
-      background-position: center;
-      background-attachment: fixed;
-      background-repeat: no-repeat;
-      color: #e0e0e0;
-      min-height: 100vh;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcane ODM Trainer | Outskirts</title>
+    <style>
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-green: #2ecc71;
+            --neon-red: #e74c3c;
+            --glass-bg: rgba(10, 15, 25, 0.95);
+            --glass-border: rgba(0, 212, 255, 0.4);
+        }
 
-    /* Semi-transparent overlays for the controls to keep them readable over the BG */
-    #controls-left, #controls-right {
-      display: flex; 
-      flex-direction: column; 
-      margin: 0 20px;
-      background: rgba(26, 26, 26, 0.85); 
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid #444;
-    }
+        body {
+            font-family: 'Orbitron', sans-serif;
+            margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center;
+            background: #05080a url('bg.png') no-repeat center center fixed;
+            background-size: cover;
+            color: #e0e0e0; min-height: 100vh; overflow: hidden;
+        }
 
-    #user-banner {
-      width: 250px; 
-      margin-top: 25px;
-      border-radius: 12px;
-      border: 2px solid #555;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    }
+        /* --- AUTH SYSTEM --- */
+        #auth-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 100; display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(20px);
+        }
+        .auth-box {
+            background: var(--glass-bg); padding: 40px; border: 1px solid var(--glass-border);
+            border-radius: 15px; text-align: center; width: 320px; box-shadow: 0 0 50px rgba(0,212,255,0.2);
+        }
 
-    #controls-left button, #controls-right button, #titanType {
-      margin: 5px 0; 
-      padding: 10px 15px; 
-      font-size: 14px; 
-      cursor: pointer; 
-      width: 175px;
-      background: #333; 
-      color: white; 
-      border: 1px solid #555; 
-      border-radius: 6px;
-      transition: background 0.2s;
-    }
+        /* --- HUD --- */
+        .hud-container { display: flex; flex-direction: row; gap: 20px; padding: 20px; z-index: 5; }
+        #controls-left, #controls-right {
+            display: flex; flex-direction: column; background: var(--glass-bg);
+            padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px); width: 250px;
+        }
+        .canvas-wrapper { border: 2px solid var(--glass-border); background: #000; position: relative; }
 
-    #controls-right button {
-      width: 250px;
-    }
+        button, select, input {
+            margin: 5px 0; padding: 12px; font-family: 'Orbitron'; text-transform: uppercase;
+            background: rgba(0, 212, 255, 0.05); color: #fff; border: 1px solid var(--glass-border);
+            cursor: pointer; transition: 0.2s; font-size: 11px;
+        }
+        button:hover { background: rgba(0, 212, 255, 0.2); box-shadow: 0 0 15px var(--neon-blue); }
+        
+        /* --- DEV TOOLS --- */
+        #dev-btn { display: none; background: #ff0055; border-color: #ff0055; font-weight: bold; }
+        #dev-panel { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: #1a0000; border: 2px solid #ff0055; padding: 20px; z-index: 60; border-radius: 10px; }
 
-    #controls-left button:hover, #controls-right button:hover { background: #555; }
-    .btn-green { background: #2e7d32 !important; font-weight: bold; }
-    .btn-green:hover { background: #388e3c !important; }
-    .btn-blank { background: #555 !important; font-weight: bold; }
-    
-    canvas {
-      border: 3px solid #444; 
-      cursor: crosshair; 
-      background-color: #000;
-      box-shadow: 0 0 20px rgba(0,0,0,0.7);
-    }
+        /* --- CREDITS --- */
+        #creditsContent { display: none; padding: 10px 0; border-top: 1px solid var(--glass-border); margin-top: 5px; font-size: 10px; }
+        .name-kraaxen { color: var(--neon-blue); font-weight: bold; }
+        .name-damter { color: var(--neon-green); font-weight: bold; }
+        .name-cuternest { color: var(--neon-red); font-weight: bold; }
 
-    #titanCount {
-      margin-top: 15px; 
-      font-weight: bold; 
-      color: #ffcc00;
-      font-size: 18px;
-    }
+        #leaderboard-panel {
+            position: fixed; right: -350px; top: 0; width: 300px; height: 100%;
+            background: var(--glass-bg); border-left: 2px solid var(--glass-border);
+            z-index: 50; padding: 40px 20px; transition: 0.4s;
+        }
+        #leaderboard-panel.active { right: 0; }
+        .rank-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(0, 212, 255, 0.1); }
 
-    #modeIndicator {
-      margin-top: 10px; 
-      font-weight: bold; 
-      color: #00ff00; 
-    }
+        #sync-meter { font-size: 24px; color: var(--neon-green); text-align: center; margin-bottom: 10px; }
+        .user-info { border-bottom: 1px solid var(--glass-border); margin-bottom: 15px; padding-bottom: 10px; position: relative; }
+        #status-indicator { font-size: 10px; text-align: center; margin-top: 5px; letter-spacing: 1px; }
 
-    .credits {
-      margin-top: 30px;
-      padding-top: 20px;
-      border-top: 2px solid #444;
-      font-size: 18px; 
-      line-height: 2.2;
-    }
-
-    .name-kraaxen {
-      color: #00d4ff; 
-      font-weight: 900;
-      font-size: 22px;
-      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-    }
-    .name-damter {
-      color: #2ecc71; 
-      font-weight: 900;
-      font-size: 22px;
-      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-    }
-    .name-cuternest {
-      color: #e74c3c; 
-      font-weight: 900;
-      font-size: 22px;
-      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-    }
-    .credit-desc {
-      color: #ccc;
-      font-size: 14px;
-      font-weight: normal;
-    }
-  </style>
+        canvas { display: block; cursor: crosshair; }
+        #user-banner { width: 100%; margin-top: auto; border: 1px solid var(--glass-border); border-radius: 4px; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="controls-left">
-    <button id="undoPath">Undo</button>
-    <button id="redoPath">Redo</button>
-    <button id="clearPath">Clear Path</button>
-    <button id="regen" class="btn-green">New Titan Path</button>
-    <button id="blankMap" class="btn-blank">Create Blank Map</button>
-    <button id="drawMode">ODM</button>
-    <button id="customMode">Place Titans</button>
-    <select id="titanType">
-      <option value="basic">Basic Titan</option>
-      <option value="abnormal">Abnormal Titan</option>
-    </select>
-    <div id="modeIndicator">Mode: ODM</div>
-  </div>
 
-  <canvas id="map" width="800" height="800"></canvas>
+<div id="auth-overlay">
+    <div class="auth-box">
+        <h2 style="color: var(--neon-blue);">USER ACCESS</h2>
+        <input type="text" id="usernameInput" placeholder="USERNAME">
+        <input type="password" id="passwordInput" placeholder="PASSWORD">
+        <button onclick="handleAuth('login')">Login</button>
+        <button onclick="handleAuth('signup')" style="font-size: 9px; border:none; background:none;">Create Account</button>
+        <button onclick="guestPlay()" style="margin-top: 20px; opacity: 0.6;">Play as Guest</button>
+    </div>
+</div>
 
-  <div id="controls-right">
-    <button id="toggleGrid">Toggle Grid</button>
-    <button id="cadetMode">Cadet</button>
-    <button id="nightmareMode">Nightmare</button>
-    <p id="titanCount">Titans on map: 0</p>
-    
-    <div class="credits">
-      <span class="name-kraaxen">kraaxeN</span> <br><span class="credit-desc">- main idea / coding</span><br>
-      <span class="name-damter">Damter</span> <br><span class="credit-desc">- general ideas + grid layout</span><br>
-      <span class="name-cuternest">Cuternest</span> <br><span class="credit-desc">- map design</span>
+<div id="dev-panel">
+    <h3 style="color: #ff0055; margin-top: 0;">KRAAXEN DEV CONSOLE</h3>
+    <button onclick="devKillAll()">INSTANT PURGE (KILL ALL)</button>
+    <button onclick="devResetDatabase()" style="background: red;">WIPE GLOBAL MISSIONS</button>
+    <button onclick="document.getElementById('dev-panel').style.display='none'">CLOSE</button>
+</div>
+
+<div id="leaderboard-panel">
+    <button onclick="toggleLB()" style="width: 40px; margin-bottom: 20px;">X</button>
+    <h2 style="color: var(--neon-blue);">TOP USERS</h2>
+    <div id="lb-list"></div>
+</div>
+
+<div class="hud-container">
+    <div id="controls-left">
+        <button id="dev-btn" onclick="document.getElementById('dev-panel').style.display='block'">[DEV TOOLS]</button>
+        <div class="user-info">
+            <button onclick="signOut()" style="position: absolute; right: 0; top: 0; padding: 2px 5px; font-size: 8px; width: auto;">Sign Out</button>
+            <span style="font-size: 10px; color: var(--neon-blue);">USER:</span><br>
+            <span id="display-name" style="font-weight: 900; font-size: 18px;">GUEST</span><br>
+            <span style="font-size: 10px;">MISSIONS: <span id="display-missions" style="color:var(--neon-green)">0</span></span>
+        </div>
+        <button onclick="undo()">Undo Path</button>
+        <button onclick="clearPathsOnly()">Clear Paths</button>
+        <button onclick="generate()" style="color: var(--neon-green); border-color: var(--neon-green);">New Mission</button>
+        <button onclick="toggleLB()" style="color: gold; border-color: gold;">Leaderboard</button>
+
+        <div style="margin-top: 15px;">
+            <button id="creditsBtn" onclick="toggleCredits()">▼ Credits</button>
+            <div id="creditsContent">
+                <span class="name-kraaxen">kraaxeN</span> - idea and coding<br>
+                <span class="name-damter">Damter</span> - grid design and fun ideas<br>
+                <span class="name-cuternest">Cuternest</span> - map design
+            </div>
+        </div>
     </div>
 
-    <img src="kraxbanner.png" id="user-banner" alt="kraaxeN Banner">
-  </div>
+    <div class="canvas-wrapper">
+        <div id="sync-meter">SYNC: <span id="sync-val">0</span>%</div>
+        <canvas id="map" width="800" height="800"></canvas>
+        <div id="status-indicator">SYSTEM READY</div>
+    </div>
 
-  <script>
-    const canvas = document.getElementById("map");
-    const ctx = canvas.getContext("2d");
+    <div id="controls-right">
+        <button id="modeBtn" onclick="toggleMode()">Mode: ODM</button>
+        <select id="titanType">
+            <option value="basic">Basic Titan</option>
+            <option value="abnormal">Abnormal Titan</option>
+        </select>
+        <button onclick="createBlankMap()" style="border-color: var(--neon-red); color: var(--neon-red);">Create Blank Map</button>
+        <button onclick="toggleGrid()">Toggle Grid</button>
+        
+        <a href="https://www.youtube.com/@kraaxeN" target="_blank" style="margin-top: auto;">
+            <img src="kraxbanner.png" id="user-banner" alt="Banner">
+        </a>
+    </div>
+</div>
 
-    const mapImage = new Image(); mapImage.src = "outskirts.png";
-    const gridImage = new Image(); gridImage.src = "grid.png";
-    const basicImage = new Image(); basicImage.src = "basic.png";
-    const abnormalImage = new Image(); abnormalImage.src = "abnormal.png";
-    const skullImage = new Image(); skullImage.src = "skull.png";
+<script>
+    let currentUser = null;
+    let isCheatMode = false;
+    const dbKey = 'arcane_odm_data';
 
-    // Polygon coordinates based on your latest diagram instructions
+    // Refined Polygon Spawn Area based on image sectors
     const spawnPolygon = [
-      {x: 60, y: 420},  {x: 80, y: 550},  {x: 175, y: 630}, 
-      {x: 380, y: 620}, {x: 600, y: 640}, {x: 770, y: 660}, 
-      {x: 775, y: 480}, {x: 760, y: 200}, {x: 780, y: 45},  
-      {x: 600, y: 40},  {x: 230, y: 40},  {x: 210, y: 150}, 
-      {x: 180, y: 300}, {x: 60, y: 410}                   
+        {x: 270, y: 40},  {x: 740, y: 70},  {x: 770, y: 350}, 
+        {x: 780, y: 600}, {x: 620, y: 700}, {x: 350, y: 680},
+        {x: 180, y: 640}, {x: 90, y: 450}, {x: 140, y: 300},
+        {x: 220, y: 120}
     ];
 
-    const noSpawnBox = { x: 520, y: 430, w: 90, h: 75 };
-
-    let titans = [];
-    let pathSegments = [];
-    let redoSegments = [];
-    let currentSegment = [];
-    let titanDifficulty = "nightmare"; 
-    let gridVisible = true;
-    let customModeActive = false;
-
-    function isInsideSpawnZone(x, y) {
-      let inside = false;
-      for (let i = 0, j = spawnPolygon.length - 1; i < spawnPolygon.length; j = i++) {
-        const xi = spawnPolygon[i].x, yi = spawnPolygon[i].y;
-        const xj = spawnPolygon[j].x, yj = spawnPolygon[j].y;
-        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-        if (intersect) inside = !inside;
-      }
-      const inBlackBox = x >= noSpawnBox.x && x <= noSpawnBox.x + noSpawnBox.w &&
-                         y >= noSpawnBox.y && y <= noSpawnBox.y + noSpawnBox.h;
-      return inside && !inBlackBox;
-    }
-
-    function generateTitans() {
-      titans = [];
-      pathSegments = [];
-      redoSegments = [];
-      const targetCount = Math.floor(Math.random() * (44 - 37 + 1)) + 37;
-      let attempts = 0;
-      const minDistance = 55;
-
-      while (titans.length < targetCount && attempts < 4000) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        if (isInsideSpawnZone(x, y)) {
-          let tooClose = false;
-          if (Math.random() > 0.15) {
-            for (const other of titans) {
-              if (Math.hypot(x - other.x, y - other.y) < minDistance) {
-                tooClose = true; break;
-              }
+    function isPointInPoly(pt, poly) {
+        let isInside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            if (((poly[i].y > pt.y) !== (poly[j].y > pt.y)) &&
+                (pt.x < (poly[j].x - poly[i].x) * (pt.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) {
+                isInside = !isInside;
             }
-          }
-          if (!tooClose) {
-            let type = "basic";
-            if (titanDifficulty === "cadet") type = Math.random() < 0.5 ? "basic" : "abnormal";
-            else if (titanDifficulty === "nightmare") type = "abnormal";
-            titans.push({ x, y, type, markedBy: null });
-          }
         }
-        attempts++;
-      }
-      draw();
+        return isInside;
     }
 
-    function distancePointToLine(px, py, x1, y1, x2, y2) {
-      const A = px - x1, B = py - y1, C = x2 - x1, D = y2 - y1;
-      const dot = A * C + B * D;
-      const len_sq = C * C + D * D;
-      let param = len_sq !== 0 ? dot / len_sq : -1;
-      let xx, yy;
-      if (param < 0) { xx = x1; yy = y1; }
-      else if (param > 1) { xx = x2; yy = y2; }
-      else { xx = x1 + param * C; yy = y1 + param * D; }
-      return Math.hypot(px - xx, py - yy);
+    function getRandomPointInPoly(poly) {
+        let pt = {x: 0, y: 0};
+        let found = false;
+        while (!found) {
+            pt.x = Math.random() * 800;
+            pt.y = Math.random() * 800;
+            if (isPointInPoly(pt, poly)) found = true;
+        }
+        return pt;
     }
 
-    function applyKillLogic(segIndex) {
-      const seg = pathSegments[segIndex];
-      for (const t of titans) {
-        if (t.markedBy !== null && t.markedBy < segIndex) continue;
-        for (let i = 0; i < seg.length - 1; i++) {
-          if (distancePointToLine(t.x, t.y, seg[i].x, seg[i].y, seg[i+1].x, seg[i+1].y) < 22) {
-            t.markedBy = segIndex;
-            break;
-          }
+    function handleAuth(type) {
+        const u = document.getElementById('usernameInput').value.trim();
+        const p = document.getElementById('passwordInput').value.trim();
+        if(!u || !p) return alert("Fill fields");
+        let users = JSON.parse(localStorage.getItem(dbKey) || '{}');
+        
+        if(type === 'signup') {
+            if(users[u]) return alert("Exists");
+            users[u] = { password: p, missions: 0 };
+            localStorage.setItem(dbKey, JSON.stringify(users));
+            alert("Account Created!");
+        } else {
+            if(!users[u] || users[u].password !== p) return alert("Wrong credentials");
+            currentUser = u;
+            document.getElementById('display-name').textContent = u.toUpperCase();
+            document.getElementById('display-missions').textContent = users[u].missions;
+            document.getElementById('auth-overlay').style.display = 'none';
+            
+            // DEV ACCESS CHECK
+            if(u === 'kraaxen' && p === '123456') {
+                document.getElementById('dev-btn').style.display = 'block';
+            }
         }
-      }
+    }
+
+    function devKillAll() {
+        titans.forEach(t => t.dead = true);
+        document.getElementById('sync-val').textContent = "100";
+        checkKill([]); // Trigger win condition
+    }
+
+    function devResetDatabase() {
+        if(confirm("DANGER: This will wipe all mission counts for ALL users. Continue?")) {
+            localStorage.setItem(dbKey, JSON.stringify({}));
+            location.reload();
+        }
+    }
+
+    function guestPlay() { document.getElementById('auth-overlay').style.display = 'none'; }
+    function signOut() { location.reload(); }
+
+    function toggleLB() {
+        const p = document.getElementById('leaderboard-panel');
+        p.classList.toggle('active');
+        if(p.classList.contains('active')) {
+            const users = JSON.parse(localStorage.getItem(dbKey) || '{}');
+            const sorted = Object.entries(users).sort((a,b) => b[1].missions - a[1].missions);
+            document.getElementById('lb-list').innerHTML = sorted.map(([name, data], i) => `
+                <div class="rank-item"><span>${i+1}. ${name}</span><span style="color:var(--neon-green)">${data.missions}</span></div>
+            `).join('');
+        }
+    }
+
+    function toggleCredits() {
+        const c = document.getElementById('creditsContent');
+        const b = document.getElementById('creditsBtn');
+        const isVis = c.style.display === 'block';
+        c.style.display = isVis ? 'none' : 'block';
+        b.textContent = isVis ? '▼ Credits' : '▲ Credits';
+    }
+
+    const canvas = document.getElementById('map');
+    const ctx = canvas.getContext('2d');
+    const imgs = { map: new Image(), basic: new Image(), abnormal: new Image(), skull: new Image(), grid: new Image() };
+    imgs.map.src = 'outskirts.png'; imgs.basic.src = 'basic.png';
+    imgs.abnormal.src = 'abnormal.png'; imgs.skull.src = 'skull.png'; imgs.grid.src = 'grid.png';
+
+    let titans = [], paths = [], currentPath = [], drawing = false, grid = true, customMode = false;
+
+    function generate() {
+        isCheatMode = false;
+        document.getElementById('status-indicator').textContent = "CADET MISSION ACTIVE (80% Basic / 20% Abnormal)";
+        document.getElementById('status-indicator').style.color = "var(--neon-green)";
+        titans = []; paths = [];
+        for(let i=0; i<40; i++) {
+            let pos = getRandomPointInPoly(spawnPolygon);
+            // 80% Basic (0-0.8), 20% Abnormal (0.8-1.0)
+            let type = Math.random() < 0.8 ? 'basic' : 'abnormal';
+            titans.push({ x: pos.x, y: pos.y, type: type, dead: false, float: 20 });
+        }
+        document.getElementById('sync-val').textContent = '0';
+    }
+
+    function createBlankMap() {
+        isCheatMode = true;
+        document.getElementById('status-indicator').textContent = "PRACTICE MODE (NO SCORE)";
+        document.getElementById('status-indicator').style.color = "var(--neon-red)";
+        titans = []; paths = [];
+        document.getElementById('sync-val').textContent = '0';
+        if(!customMode) toggleMode();
+    }
+
+    function distToSeg(p, v, w) {
+        const l2 = Math.pow(v.x-w.x, 2) + Math.pow(v.y-w.y, 2);
+        if(l2 == 0) return Math.hypot(p.x-v.x, p.y-v.y);
+        let t = ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y))/l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(p.x-(v.x+t*(w.x-v.x)), p.y-(v.y+t*(w.y-v.y)));
+    }
+
+    function checkKill(seg) {
+        const p1 = seg.length >= 2 ? seg[seg.length-2] : null;
+        const p2 = seg.length >= 2 ? seg[seg.length-1] : null;
+        
+        titans.forEach(t => {
+            if(!t.dead && p1 && p2 && distToSeg(t, p1, p2) < 20) {
+                t.dead = true;
+            }
+        });
+
+        const killed = titans.filter(x => x.dead).length;
+        const perc = titans.length > 0 ? Math.floor((killed/titans.length)*100) : 0;
+        document.getElementById('sync-val').textContent = perc;
+
+        if(perc === 100 && currentUser && !isCheatMode && titans.length > 0) {
+            let db = JSON.parse(localStorage.getItem(dbKey));
+            db[currentUser].missions++;
+            localStorage.setItem(dbKey, JSON.stringify(db));
+            document.getElementById('display-missions').textContent = db[currentUser].missions;
+            alert("CADET MISSION COMPLETE!");
+            generate();
+        }
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (mapImage.complete) ctx.drawImage(mapImage, 0, 0, 800, 800);
-      if (gridVisible && gridImage.complete) ctx.drawImage(gridImage, 0, 0, 800, 800);
-
-      titans.forEach(t => {
-        const img = t.type === "abnormal" ? abnormalImage : basicImage;
-        ctx.drawImage(img, t.x - 20, t.y - 20, 40, 40);
-        if (t.markedBy !== null) ctx.drawImage(skullImage, t.x - 17, t.y - 17, 34, 34);
-      });
-
-      ctx.strokeStyle = "white"; ctx.lineWidth = 3; ctx.lineJoin = "round";
-      [...pathSegments, currentSegment].forEach(seg => {
-        if (seg.length < 2) return;
-        ctx.beginPath(); ctx.moveTo(seg[0].x, seg[0].y);
-        for (let i = 1; i < seg.length; i++) ctx.lineTo(seg[i].x, seg[i].y);
-        ctx.stroke();
-      });
-
-      document.getElementById("titanCount").textContent = `Titans on map: ${titans.length}`;
+        ctx.clearRect(0,0,800,800);
+        ctx.drawImage(imgs.map, 0, 0, 800, 800);
+        if(grid) ctx.drawImage(imgs.grid, 0, 0, 800, 800);
+        titans.forEach(t => {
+            ctx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-20, t.y-20, 40, 40);
+            if(t.dead) {
+                if(t.float > 0) t.float -= 1.5;
+                ctx.save(); ctx.shadowBlur = 15; ctx.shadowColor = 'red';
+                ctx.drawImage(imgs.skull, t.x-15, t.y-15 + t.float, 30, 30); ctx.restore();
+            }
+        });
+        ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 3;
+        [...paths, currentPath].forEach(p => {
+            if(p.length < 2) return;
+            ctx.beginPath(); ctx.moveTo(p[0].x, p[0].y);
+            p.forEach(pt => ctx.lineTo(pt.x, pt.y)); ctx.stroke();
+        });
+        requestAnimationFrame(draw);
     }
 
-    let isDrawing = false;
-    canvas.addEventListener("mousedown", (e) => {
-      isDrawing = true; currentSegment = [];
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left, y = e.clientY - rect.top;
-      
-      if (customModeActive) {
-        if (titans.length < 44 && isInsideSpawnZone(x, y)) {
-          titans.push({ x, y, type: document.getElementById("titanType").value, markedBy: null });
-        }
-      } else {
-        currentSegment.push({x, y});
-      }
-      draw();
-    });
-
-    canvas.addEventListener("mousemove", (e) => {
-      if (!isDrawing || customModeActive) return;
-      const rect = canvas.getBoundingClientRect();
-      currentSegment.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-      draw();
-    });
-
-    window.addEventListener("mouseup", () => {
-      if (isDrawing && !customModeActive && currentSegment.length > 1) {
-        pathSegments.push([...currentSegment]);
-        applyKillLogic(pathSegments.length - 1);
-        redoSegments = [];
-      }
-      isDrawing = false; currentSegment = []; draw();
-    });
-
-    document.getElementById("undoPath").onclick = () => {
-      if (pathSegments.length > 0) {
-        const lastIdx = pathSegments.length - 1;
-        redoSegments.push(pathSegments.pop());
-        titans.forEach(t => { if(t.markedBy === lastIdx) t.markedBy = null; });
-        draw();
-      }
+    canvas.onmousedown = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        if(customMode) {
+            isCheatMode = true;
+            document.getElementById('status-indicator').textContent = "PRACTICE MODE (NO SCORE)";
+            document.getElementById('status-indicator').style.color = "var(--neon-red)";
+            titans.push({x, y, type: document.getElementById('titanType').value, dead: false, float: 0});
+            document.getElementById('sync-val').textContent = '0';
+        } else { drawing = true; currentPath = [{x, y}]; }
     };
+    canvas.onmousemove = (e) => { if(drawing) { const r = canvas.getBoundingClientRect(); currentPath.push({x: e.clientX - r.left, y: e.clientY - r.top}); checkKill(currentPath); } };
+    window.onmouseup = () => { if(drawing) paths.push([...currentPath]); drawing = false; currentPath = []; };
 
-    document.getElementById("redoPath").onclick = () => {
-      if (redoSegments.length > 0) {
-        pathSegments.push(redoSegments.pop());
-        applyKillLogic(pathSegments.length - 1);
-        draw();
-      }
-    };
-
-    document.getElementById("clearPath").onclick = () => { 
-      pathSegments = []; redoSegments = []; titans.forEach(t => t.markedBy = null); draw(); 
-    };
-
-    document.getElementById("regen").onclick = () => generateTitans();
-
-    document.getElementById("blankMap").onclick = () => {
-      titans = []; pathSegments = []; redoSegments = []; 
-      customModeActive = true;
-      document.getElementById("modeIndicator").textContent = "Mode: Placing Titans";
-      document.getElementById("modeIndicator").style.color = "#ff4444";
-      draw();
-    };
-
-    document.getElementById("drawMode").onclick = () => {
-      customModeActive = false;
-      document.getElementById("modeIndicator").textContent = "Mode: ODM";
-      document.getElementById("modeIndicator").style.color = "#00ff00";
-    };
-
-    document.getElementById("customMode").onclick = () => {
-      customModeActive = true;
-      document.getElementById("modeIndicator").textContent = "Mode: Placing Titans";
-      document.getElementById("modeIndicator").style.color = "#ff4444";
-    };
-
-    document.getElementById("toggleGrid").onclick = () => { gridVisible = !gridVisible; draw(); };
-    document.getElementById("cadetMode").onclick = () => { titanDifficulty = "cadet"; generateTitans(); };
-    document.getElementById("nightmareMode").onclick = () => { titanDifficulty = "nightmare"; generateTitans(); };
-
-    let loaded = 0;
-    function checkLoad() { if (++loaded === 5) generateTitans(); }
-    [mapImage, gridImage, basicImage, abnormalImage, skullImage].forEach(img => img.onload = checkLoad);
-  </script>
+    function undo() { paths.pop(); titans.forEach(t => t.dead = false); document.getElementById('sync-val').textContent = '0'; }
+    function clearPathsOnly() { paths = []; titans.forEach(t => t.dead = false); document.getElementById('sync-val').textContent = '0'; }
+    function toggleGrid() { grid = !grid; }
+    function toggleMode() { 
+        customMode = !customMode; 
+        document.getElementById('modeBtn').textContent = customMode ? "Mode: Placement" : "Mode: ODM";
+    }
+    imgs.map.onload = () => { generate(); draw(); };
+</script>
 </body>
 </html>
