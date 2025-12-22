@@ -51,7 +51,7 @@
         
         /* --- DEV TOOLS --- */
         #dev-btn { display: none; background: #ff0055; border-color: #ff0055; font-weight: bold; }
-        #dev-panel { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: #1a0000; border: 2px solid #ff0055; padding: 20px; z-index: 60; border-radius: 10px; }
+        #dev-panel { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: #1a0000; border: 2px solid #ff0055; padding: 20px; z-index: 60; border-radius: 10px; width: 280px; }
 
         /* --- CREDITS --- */
         #creditsContent { display: none; padding: 10px 0; border-top: 1px solid var(--glass-border); margin-top: 5px; font-size: 10px; }
@@ -63,6 +63,7 @@
             position: fixed; right: -350px; top: 0; width: 300px; height: 100%;
             background: var(--glass-bg); border-left: 2px solid var(--glass-border);
             z-index: 50; padding: 40px 20px; transition: 0.4s;
+            overflow-y: auto;
         }
         #leaderboard-panel.active { right: 0; }
         .rank-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(0, 212, 255, 0.1); }
@@ -91,15 +92,19 @@
 
 <div id="dev-panel">
     <h3 style="color: #ff0055; margin-top: 0;">KRAAXEN DEV CONSOLE</h3>
-    <button onclick="devKillAll()">INSTANT PURGE (KILL ALL)</button>
-    <button onclick="devResetDatabase()" style="background: red;">WIPE GLOBAL MISSIONS</button>
-    <button onclick="document.getElementById('dev-panel').style.display='none'">CLOSE</button>
+    <button onclick="devKillAll()" style="width:100%">INSTANT PURGE (KILL ALL)</button>
+    <hr style="border:0; border-top:1px solid #440000; margin: 10px 0;">
+    <input type="text" id="banUserInput" placeholder="USERNAME TO BAN" style="width: 80%;">
+    <button onclick="devBanUser()" style="background: #440000; width:100%">BAN MEMBER</button>
+    <hr style="border:0; border-top:1px solid #440000; margin: 10px 0;">
+    <button onclick="devResetDatabase()" style="background: red; width:100%">WIPE GLOBAL MISSIONS</button>
+    <button onclick="document.getElementById('dev-panel').style.display='none'" style="width:100%">CLOSE</button>
 </div>
 
 <div id="leaderboard-panel">
     <button onclick="toggleLB()" style="width: 40px; margin-bottom: 20px;">X</button>
-    <h2 style="color: var(--neon-blue);">TOP USERS</h2>
-    <div id="lb-list"></div>
+    <h2 style="color: var(--neon-blue);">GLOBAL TOP USERS</h2>
+    <div id="lb-list">Loading Global Data...</div>
 </div>
 
 <div class="hud-container">
@@ -148,11 +153,37 @@
 </div>
 
 <script>
-    let currentUser = null;
-    let isCheatMode = false;
+    const BIN_ID = 'REPLACE_WITH_YOUR_BIN_ID'; 
+    const MASTER_KEY = 'REPLACE_WITH_YOUR_MASTER_KEY';
     const dbKey = 'arcane_odm_data';
 
-    // Refined Polygon Spawn Area based on image sectors
+    let currentUser = null;
+    let isCheatMode = false;
+    let globalData = {};
+
+    async function syncGlobalData(push = false) {
+        if (!MASTER_KEY.includes('REPLACE')) {
+            try {
+                if (push) {
+                    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
+                        body: JSON.stringify(globalData)
+                    });
+                } else {
+                    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+                        headers: { 'X-Master-Key': MASTER_KEY }
+                    });
+                    const json = await res.json();
+                    globalData = json.record;
+                    localStorage.setItem(dbKey, JSON.stringify(globalData));
+                }
+            } catch (e) { console.error("Sync Failed", e); }
+        } else {
+            globalData = JSON.parse(localStorage.getItem(dbKey) || '{}');
+        }
+    }
+
     const spawnPolygon = [
         {x: 270, y: 40},  {x: 740, y: 70},  {x: 770, y: 350}, 
         {x: 780, y: 600}, {x: 620, y: 700}, {x: 350, y: 680},
@@ -182,25 +213,23 @@
         return pt;
     }
 
-    function handleAuth(type) {
+    async function handleAuth(type) {
         const u = document.getElementById('usernameInput').value.trim();
         const p = document.getElementById('passwordInput').value.trim();
         if(!u || !p) return alert("Fill fields");
-        let users = JSON.parse(localStorage.getItem(dbKey) || '{}');
-        
+        await syncGlobalData(); 
+        if(globalData[u] && globalData[u].banned) return alert("YOU ARE BANNED.");
         if(type === 'signup') {
-            if(users[u]) return alert("Exists");
-            users[u] = { password: p, missions: 0 };
-            localStorage.setItem(dbKey, JSON.stringify(users));
+            if(globalData[u]) return alert("Exists");
+            globalData[u] = { password: p, missions: 0, banned: false };
+            await syncGlobalData(true);
             alert("Account Created!");
         } else {
-            if(!users[u] || users[u].password !== p) return alert("Wrong credentials");
+            if(!globalData[u] || globalData[u].password !== p) return alert("Wrong credentials");
             currentUser = u;
             document.getElementById('display-name').textContent = u.toUpperCase();
-            document.getElementById('display-missions').textContent = users[u].missions;
+            document.getElementById('display-missions').textContent = globalData[u].missions;
             document.getElementById('auth-overlay').style.display = 'none';
-            
-            // DEV ACCESS CHECK
             if(u === 'kraaxen' && p === '123456') {
                 document.getElementById('dev-btn').style.display = 'block';
             }
@@ -210,12 +239,23 @@
     function devKillAll() {
         titans.forEach(t => t.dead = true);
         document.getElementById('sync-val').textContent = "100";
-        checkKill([]); // Trigger win condition
+        checkKill([]);
     }
 
-    function devResetDatabase() {
-        if(confirm("DANGER: This will wipe all mission counts for ALL users. Continue?")) {
-            localStorage.setItem(dbKey, JSON.stringify({}));
+    async function devBanUser() {
+        const target = document.getElementById('banUserInput').value.trim();
+        if(!target) return;
+        if(globalData[target]) {
+            globalData[target].banned = true;
+            await syncGlobalData(true);
+            alert(target + " banned.");
+        } else { alert("Not found."); }
+    }
+
+    async function devResetDatabase() {
+        if(confirm("WIPE GLOBAL DATA?")) {
+            globalData = {};
+            await syncGlobalData(true);
             location.reload();
         }
     }
@@ -223,12 +263,15 @@
     function guestPlay() { document.getElementById('auth-overlay').style.display = 'none'; }
     function signOut() { location.reload(); }
 
-    function toggleLB() {
+    async function toggleLB() {
         const p = document.getElementById('leaderboard-panel');
         p.classList.toggle('active');
         if(p.classList.contains('active')) {
-            const users = JSON.parse(localStorage.getItem(dbKey) || '{}');
-            const sorted = Object.entries(users).sort((a,b) => b[1].missions - a[1].missions);
+            document.getElementById('lb-list').innerHTML = "Fetching...";
+            await syncGlobalData();
+            const sorted = Object.entries(globalData)
+                .filter(([name, data]) => !data.banned)
+                .sort((a,b) => b[1].missions - a[1].missions);
             document.getElementById('lb-list').innerHTML = sorted.map(([name, data], i) => `
                 <div class="rank-item"><span>${i+1}. ${name}</span><span style="color:var(--neon-green)">${data.missions}</span></div>
             `).join('');
@@ -253,12 +296,14 @@
 
     function generate() {
         isCheatMode = false;
-        document.getElementById('status-indicator').textContent = "CADET MISSION ACTIVE (80% Basic / 20% Abnormal)";
+        drawing = false; // RESET DRAWING STATE
+        paths = []; 
+        currentPath = []; 
+        document.getElementById('status-indicator').textContent = "CADET MISSION ACTIVE";
         document.getElementById('status-indicator').style.color = "var(--neon-green)";
-        titans = []; paths = [];
+        titans = [];
         for(let i=0; i<40; i++) {
             let pos = getRandomPointInPoly(spawnPolygon);
-            // 80% Basic (0-0.8), 20% Abnormal (0.8-1.0)
             let type = Math.random() < 0.8 ? 'basic' : 'abnormal';
             titans.push({ x: pos.x, y: pos.y, type: type, dead: false, float: 20 });
         }
@@ -267,9 +312,10 @@
 
     function createBlankMap() {
         isCheatMode = true;
+        drawing = false;
         document.getElementById('status-indicator').textContent = "PRACTICE MODE (NO SCORE)";
         document.getElementById('status-indicator').style.color = "var(--neon-red)";
-        titans = []; paths = [];
+        titans = []; paths = []; currentPath = [];
         document.getElementById('sync-val').textContent = '0';
         if(!customMode) toggleMode();
     }
@@ -282,26 +328,22 @@
         return Math.hypot(p.x-(v.x+t*(w.x-v.x)), p.y-(v.y+t*(w.y-v.y)));
     }
 
-    function checkKill(seg) {
+    async function checkKill(seg) {
         const p1 = seg.length >= 2 ? seg[seg.length-2] : null;
         const p2 = seg.length >= 2 ? seg[seg.length-1] : null;
-        
         titans.forEach(t => {
-            if(!t.dead && p1 && p2 && distToSeg(t, p1, p2) < 20) {
-                t.dead = true;
-            }
+            if(!t.dead && p1 && p2 && distToSeg(t, p1, p2) < 20) { t.dead = true; }
         });
-
         const killed = titans.filter(x => x.dead).length;
         const perc = titans.length > 0 ? Math.floor((killed/titans.length)*100) : 0;
         document.getElementById('sync-val').textContent = perc;
 
         if(perc === 100 && currentUser && !isCheatMode && titans.length > 0) {
-            let db = JSON.parse(localStorage.getItem(dbKey));
-            db[currentUser].missions++;
-            localStorage.setItem(dbKey, JSON.stringify(db));
-            document.getElementById('display-missions').textContent = db[currentUser].missions;
-            alert("CADET MISSION COMPLETE!");
+            drawing = false; // FORCE DRAWING OFF BEFORE ALERT
+            globalData[currentUser].missions++;
+            await syncGlobalData(true);
+            document.getElementById('display-missions').textContent = globalData[currentUser].missions;
+            alert("MISSION COMPLETE!");
             generate();
         }
     }
@@ -310,6 +352,13 @@
         ctx.clearRect(0,0,800,800);
         ctx.drawImage(imgs.map, 0, 0, 800, 800);
         if(grid) ctx.drawImage(imgs.grid, 0, 0, 800, 800);
+        
+        const killedCount = titans.filter(x => x.dead).length;
+        if(killedCount === 0 && titans.length > 0) {
+            ctx.fillStyle = "rgba(0, 212, 255, 0.1)";
+            ctx.fillRect(0, 700, 800, 100);
+        }
+
         titans.forEach(t => {
             ctx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-20, t.y-20, 40, 40);
             if(t.dead) {
@@ -332,14 +381,34 @@
         const x = e.clientX - rect.left, y = e.clientY - rect.top;
         if(customMode) {
             isCheatMode = true;
-            document.getElementById('status-indicator').textContent = "PRACTICE MODE (NO SCORE)";
-            document.getElementById('status-indicator').style.color = "var(--neon-red)";
             titans.push({x, y, type: document.getElementById('titanType').value, dead: false, float: 0});
-            document.getElementById('sync-val').textContent = '0';
-        } else { drawing = true; currentPath = [{x, y}]; }
+        } else { 
+            const killedCount = titans.filter(t => t.dead).length;
+            if(killedCount === 0 && titans.length > 0 && y < 700) {
+                document.getElementById('status-indicator').textContent = "LOCKED: START FROM BOTTOM SECTOR";
+                setTimeout(() => { if(!isCheatMode) document.getElementById('status-indicator').textContent = "CADET MISSION ACTIVE"; }, 2000);
+                return;
+            }
+            drawing = true; 
+            currentPath = [{x, y}]; 
+        }
     };
-    canvas.onmousemove = (e) => { if(drawing) { const r = canvas.getBoundingClientRect(); currentPath.push({x: e.clientX - r.left, y: e.clientY - r.top}); checkKill(currentPath); } };
-    window.onmouseup = () => { if(drawing) paths.push([...currentPath]); drawing = false; currentPath = []; };
+    canvas.onmousemove = (e) => { 
+        if(drawing) { 
+            const r = canvas.getBoundingClientRect(); 
+            currentPath.push({x: e.clientX - r.left, y: e.clientY - r.top}); 
+            checkKill(currentPath); 
+        } 
+    };
+
+    // GLOBAL MOUSE UP FIX
+    window.addEventListener('mouseup', () => {
+        if(drawing) {
+            paths.push([...currentPath]);
+            drawing = false;
+            currentPath = [];
+        }
+    });
 
     function undo() { paths.pop(); titans.forEach(t => t.dead = false); document.getElementById('sync-val').textContent = '0'; }
     function clearPathsOnly() { paths = []; titans.forEach(t => t.dead = false); document.getElementById('sync-val').textContent = '0'; }
@@ -348,7 +417,10 @@
         customMode = !customMode; 
         document.getElementById('modeBtn').textContent = customMode ? "Mode: Placement" : "Mode: ODM";
     }
-    imgs.map.onload = () => { generate(); draw(); };
+    
+    syncGlobalData().then(() => {
+        imgs.map.onload = () => { generate(); draw(); };
+    });
 </script>
 </body>
 </html>
