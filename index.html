@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcane ODM Trainer | Outskirts</title>
+    <title>Arcane ODM Trainer | Kraaxen</title>
     <style>
         :root {
             --neon-blue: #00d4ff;
             --neon-green: #2ecc71;
             --neon-red: #e74c3c;
-            --glass-bg: rgba(10, 15, 25, 0.95);
-            --glass-border: rgba(0, 212, 255, 0.4);
+            --neon-purple: #bc13fe;
+            --panel-bg: rgba(10, 10, 10, 0.9);
+            --border-color: #444;
         }
 
         body {
@@ -22,58 +23,102 @@
             color: #e0e0e0; min-height: 100vh; overflow: hidden;
         }
 
-        /* --- AUTH SYSTEM --- */
+        /* --- AUTH --- */
         #auth-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
-            z-index: 100; display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(20px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+            z-index: 1000; display: flex; justify-content: center; align-items: center;
         }
         .auth-box {
-            background: var(--glass-bg); padding: 40px; border: 1px solid var(--glass-border);
-            border-radius: 15px; text-align: center; width: 320px; box-shadow: 0 0 50px rgba(0,212,255,0.2);
+            background: var(--panel-bg); padding: 40px; border: 1px solid var(--border-color);
+            border-radius: 10px; text-align: center; width: 320px;
+            box-shadow: 0 0 20px rgba(0,0,0,1);
         }
 
-        /* --- HUD --- */
-        .hud-container { display: flex; flex-direction: row; gap: 20px; padding: 20px; z-index: 5; }
-        #controls-left, #controls-right {
-            display: flex; flex-direction: column; background: var(--glass-bg);
-            padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border);
-            backdrop-filter: blur(10px); width: 250px;
+        .main-wrapper {
+            display: flex; align-items: flex-start; gap: 20px;
+            position: relative; z-index: 10;
         }
-        .canvas-wrapper { border: 2px solid var(--glass-border); background: #000; position: relative; }
+
+        .side-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* --- CREDITS STYLING --- */
+        .credits-container { margin-top: 20px; padding-top: 15px; border-top: 1px solid #333; }
+        .credits-name { 
+            display: block; 
+            margin-top: 12px; 
+            font-size: 20px; 
+            font-weight: 900; 
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .glow-purple { color: #fff; text-shadow: 0 0 5px #fff, 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple); }
+        .glow-green { color: #fff; text-shadow: 0 0 5px #fff, 0 0 10px var(--neon-green), 0 0 20px var(--neon-green); }
+        .glow-red { color: #fff; text-shadow: 0 0 5px #fff, 0 0 10px var(--neon-red), 0 0 20px var(--neon-red); }
+
+        .canvas-container {
+            border: 4px solid #111;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            position: relative;
+            background: #000;
+        }
 
         button, select, input {
-            margin: 5px 0; padding: 12px; font-family: 'Orbitron'; text-transform: uppercase;
-            background: rgba(0, 212, 255, 0.05); color: #fff; border: 1px solid var(--glass-border);
-            cursor: pointer; transition: 0.2s; font-size: 11px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 10px;
+            font-family: 'Orbitron';
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 5px;
         }
-        button:hover { background: rgba(0, 212, 255, 0.2); box-shadow: 0 0 15px var(--neon-blue); }
+        button:hover { background: #333; border-color: #888; transform: translateY(-1px); }
         
-        /* --- DEV TOOLS --- */
-        #dev-btn { display: none; background: #ff0055; border-color: #ff0055; font-weight: bold; }
-        #dev-panel { display: none; position: fixed; top: 10%; left: 50%; transform: translateX(-50%); background: #1a0000; border: 2px solid #ff0055; padding: 20px; z-index: 60; border-radius: 10px; width: 280px; }
+        .btn-green { background: #1b4d2e !important; }
+        .btn-green:hover { background: #266b40 !important; box-shadow: 0 0 15px var(--neon-green); }
+        .btn-active { border-color: var(--neon-blue) !important; box-shadow: 0 0 15px var(--neon-blue); }
 
-        /* --- CREDITS --- */
-        #creditsContent { display: none; padding: 10px 0; border-top: 1px solid var(--glass-border); margin-top: 5px; font-size: 10px; }
-        .name-kraaxen { color: var(--neon-blue); font-weight: bold; }
-        .name-damter { color: var(--neon-green); font-weight: bold; }
-        .name-cuternest { color: var(--neon-red); font-weight: bold; }
+        .stat-label { font-size: 13px; font-weight: bold; color: #aaa; }
+        .mode-indicator { font-size: 14px; color: var(--neon-green); font-weight: bold; margin-top: 10px; text-align: center; text-shadow: 0 0 10px var(--neon-green); }
 
-        #leaderboard-panel {
-            position: fixed; right: -350px; top: 0; width: 300px; height: 100%;
-            background: var(--glass-bg); border-left: 2px solid var(--glass-border);
-            z-index: 50; padding: 40px 20px; transition: 0.4s;
-            overflow-y: auto;
+        /* --- BANNER --- */
+        .banner-link {
+            margin-top: auto;
+            display: block;
+            text-decoration: none;
+            padding: 4px;
+            border-radius: 8px;
+            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+            background-size: 400%;
+            animation: rainbow 10s linear infinite;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        #leaderboard-panel.active { right: 0; }
-        .rank-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(0, 212, 255, 0.1); }
-
-        #sync-meter { font-size: 24px; color: var(--neon-green); text-align: center; margin-bottom: 10px; }
-        .user-info { border-bottom: 1px solid var(--glass-border); margin-bottom: 15px; padding-bottom: 10px; position: relative; }
-        #status-indicator { font-size: 10px; text-align: center; margin-top: 5px; letter-spacing: 1px; }
+        .banner-link:hover { transform: scale(1.05); }
+        .banner-img {
+            width: 100%;
+            display: block;
+            border-radius: 6px;
+        }
+        
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
         canvas { display: block; cursor: crosshair; }
-        #user-banner { width: 100%; margin-top: auto; border: 1px solid var(--glass-border); border-radius: 4px; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
@@ -81,293 +126,231 @@
 
 <div id="auth-overlay">
     <div class="auth-box">
-        <h2 style="color: var(--neon-blue);">USER ACCESS</h2>
-        <input type="text" id="usernameInput" placeholder="USERNAME">
-        <input type="password" id="passwordInput" placeholder="PASSWORD">
-        <button onclick="handleAuth('login')">Login</button>
-        <button onclick="handleAuth('signup')" style="font-size: 9px; border:none; background:none;">Create Account</button>
-        <button onclick="guestPlay()" style="margin-top: 20px; opacity: 0.6;">Play as Guest</button>
-    </div>
-</div>
-
-<div id="dev-panel">
-    <h3 style="color: #ff0055; margin-top: 0;">KRAAXEN DEV CONSOLE</h3>
-    <button onclick="devKillAll()" style="width:100%">INSTANT PURGE (KILL ALL)</button>
-    <hr style="border:0; border-top:1px solid #440000; margin: 10px 0;">
-    <input type="text" id="banUserInput" placeholder="USERNAME TO BAN" style="width: 80%;">
-    <button onclick="devBanUser()" style="background: #440000; width:100%">BAN MEMBER</button>
-    <hr style="border:0; border-top:1px solid #440000; margin: 10px 0;">
-    <button onclick="devResetDatabase()" style="background: red; width:100%">WIPE GLOBAL MISSIONS</button>
-    <button onclick="document.getElementById('dev-panel').style.display='none'" style="width:100%">CLOSE</button>
-</div>
-
-<div id="leaderboard-panel">
-    <button onclick="toggleLB()" style="width: 40px; margin-bottom: 20px;">X</button>
-    <h2 style="color: var(--neon-blue);">GLOBAL TOP USERS</h2>
-    <div id="lb-list">Loading Global Data...</div>
-</div>
-
-<div class="hud-container">
-    <div id="controls-left">
-        <button id="dev-btn" onclick="document.getElementById('dev-panel').style.display='block'">[DEV TOOLS]</button>
-        <div class="user-info">
-            <button onclick="signOut()" style="position: absolute; right: 0; top: 0; padding: 2px 5px; font-size: 8px; width: auto;">Sign Out</button>
-            <span style="font-size: 10px; color: var(--neon-blue);">USER:</span><br>
-            <span id="display-name" style="font-weight: 900; font-size: 18px;">GUEST</span><br>
-            <span style="font-size: 10px;">MISSIONS: <span id="display-missions" style="color:var(--neon-green)">0</span></span>
+        <h2 id="auth-title" style="color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue);">ACCESS REQUIRED</h2>
+        <input type="text" id="usernameInput" placeholder="USERNAME" style="width: 90%;"><br>
+        <input type="password" id="passwordInput" placeholder="PASSWORD" style="width: 90%; margin-top: 10px;"><br>
+        
+        <div id="login-buttons">
+            <button onclick="handleAuth()" style="width: 100%; margin-top: 15px;">Login</button>
+            <button onclick="toggleAuthMode(true)" style="width: 100%; margin-top: 5px; color: var(--neon-blue);">Create Account</button>
         </div>
-        <button onclick="undo()">Undo Path</button>
-        <button onclick="clearPathsOnly()">Clear Paths</button>
-        <button onclick="generate()" style="color: var(--neon-green); border-color: var(--neon-green);">New Mission</button>
-        <button onclick="toggleLB()" style="color: gold; border-color: gold;">Leaderboard</button>
+        <button onclick="guestPlay()" style="width: 100%; margin-top: 10px; opacity: 0.5;">Guest Play</button>
+        <p id="auth-error" style="color: red; font-size: 11px; margin-top: 10px; display: none;"></p>
+    </div>
+</div>
 
-        <div style="margin-top: 15px;">
-            <button id="creditsBtn" onclick="toggleCredits()">▼ Credits</button>
-            <div id="creditsContent">
-                <span class="name-kraaxen">kraaxeN</span> - idea and coding<br>
-                <span class="name-damter">Damter</span> - grid design and fun ideas<br>
-                <span class="name-cuternest">Cuternest</span> - map design
-            </div>
+<div class="main-wrapper">
+    <div class="side-panel">
+        <button onclick="undo()">Undo</button>
+        <button onclick="clearPathsOnly()">Clear Path</button>
+        
+        <div style="border: 1px solid #333; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03);">
+            <div class="stat-label">Spawn Amount:</div>
+            <input type="number" id="spawnCount" value="40" min="1" max="200" style="width: 85%; margin-top: 5px;">
+            <button onclick="generate()" class="btn-green" style="width: 100%; margin-top: 10px;">Generate</button>
         </div>
-    </div>
 
-    <div class="canvas-wrapper">
-        <div id="sync-meter">SYNC: <span id="sync-val">0</span>%</div>
-        <canvas id="map" width="800" height="800"></canvas>
-        <div id="status-indicator">SYSTEM READY</div>
-    </div>
-
-    <div id="controls-right">
-        <button id="modeBtn" onclick="toggleMode()">Mode: ODM</button>
+        <button onclick="createBlankMap()" style="border-color: var(--neon-red); color: var(--neon-red);">Create Blank Map</button>
+        <hr style="border:0; border-top: 1px solid #333; width: 100%;">
+        <button id="btn-odm" class="btn-active" onclick="setMode('odm')">ODM</button>
+        <button id="btn-place" onclick="setMode('place')">Place Titans</button>
         <select id="titanType">
             <option value="basic">Basic Titan</option>
             <option value="abnormal">Abnormal Titan</option>
         </select>
-        <button onclick="createBlankMap()" style="border-color: var(--neon-red); color: var(--neon-red);">Create Blank Map</button>
+        <div class="mode-indicator" id="ui-mode">Mode: ODM</div>
+    </div>
+
+    <div class="canvas-container">
+        <div style="position: absolute; top: 15px; width: 100%; text-align: center; pointer-events: none; z-index: 20;">
+            <span id="sync-val" style="font-size: 32px; color: var(--neon-green); font-weight: 900; text-shadow: 0 0 15px var(--neon-green), 2px 2px #000;">0</span>%
+        </div>
+        <canvas id="map" width="800" height="800"></canvas>
+    </div>
+
+    <div class="side-panel">
         <button onclick="toggleGrid()">Toggle Grid</button>
         
-        <a href="https://www.youtube.com/@kraaxeN" target="_blank" style="margin-top: auto;">
-            <img src="kraxbanner.png" id="user-banner" alt="Banner">
+        <div style="margin-top: 5px;">
+            <div class="stat-label">Titans Alive:</div>
+            <div id="titan-count" style="font-size: 24px; color: var(--neon-blue); font-weight: 900;">0</div>
+        </div>
+
+        <div class="credits-container">
+            <span class="credits-name glow-purple">kraaxeN</span>
+            <span style="font-size: 11px; opacity: 0.7;">- Lead Developer</span>
+            
+            <span class="credits-name glow-green">Damter</span>
+            <span style="font-size: 11px; opacity: 0.7;">- Grid & Logic</span>
+            
+            <span class="credits-name glow-red">Cuternest</span>
+            <span style="font-size: 11px; opacity: 0.7;">- Map & Visuals</span>
+        </div>
+
+        <a href="https://www.youtube.com/@kraaxeN" target="_blank" class="banner-link">
+            <img src="kraxbanner.png" alt="YouTube" class="banner-img">
         </a>
+
+        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #333;">
+            <div style="font-size: 11px; color: #666;">USER: <span id="display-name" style="color:#aaa">GUEST</span></div>
+            <div style="font-size: 11px; color: #666;">CLEARED: <span id="display-missions" style="color:#aaa">0</span></div>
+        </div>
     </div>
 </div>
 
 <script>
-    const BIN_ID = 'REPLACE_WITH_YOUR_BIN_ID'; 
-    const MASTER_KEY = 'REPLACE_WITH_YOUR_MASTER_KEY';
-    const dbKey = 'arcane_odm_data';
-
-    let currentUser = null;
-    let isCheatMode = false;
-    let globalData = {};
-
-    async function syncGlobalData(push = false) {
-        if (!MASTER_KEY.includes('REPLACE')) {
-            try {
-                if (push) {
-                    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
-                        body: JSON.stringify(globalData)
-                    });
-                } else {
-                    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                        headers: { 'X-Master-Key': MASTER_KEY }
-                    });
-                    const json = await res.json();
-                    globalData = json.record;
-                    localStorage.setItem(dbKey, JSON.stringify(globalData));
-                }
-            } catch (e) { console.error("Sync Failed", e); }
-        } else {
-            globalData = JSON.parse(localStorage.getItem(dbKey) || '{}');
-        }
-    }
-
-    const spawnPolygon = [
-        {x: 270, y: 40},  {x: 740, y: 70},  {x: 770, y: 350}, 
-        {x: 780, y: 600}, {x: 620, y: 700}, {x: 350, y: 680},
-        {x: 180, y: 640}, {x: 90, y: 450}, {x: 140, y: 300},
-        {x: 220, y: 120}
-    ];
-
-    function isPointInPoly(pt, poly) {
-        let isInside = false;
-        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-            if (((poly[i].y > pt.y) !== (poly[j].y > pt.y)) &&
-                (pt.x < (poly[j].x - poly[i].x) * (pt.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) {
-                isInside = !isInside;
-            }
-        }
-        return isInside;
-    }
-
-    function getRandomPointInPoly(poly) {
-        let pt = {x: 0, y: 0};
-        let found = false;
-        while (!found) {
-            pt.x = Math.random() * 800;
-            pt.y = Math.random() * 800;
-            if (isPointInPoly(pt, poly)) found = true;
-        }
-        return pt;
-    }
-
-    async function handleAuth(type) {
-        const u = document.getElementById('usernameInput').value.trim();
-        const p = document.getElementById('passwordInput').value.trim();
-        if(!u || !p) return alert("Fill fields");
-        await syncGlobalData(); 
-        if(globalData[u] && globalData[u].banned) return alert("YOU ARE BANNED.");
-        if(type === 'signup') {
-            if(globalData[u]) return alert("Exists");
-            globalData[u] = { password: p, missions: 0, banned: false };
-            await syncGlobalData(true);
-            alert("Account Created!");
-        } else {
-            if(!globalData[u] || globalData[u].password !== p) return alert("Wrong credentials");
-            currentUser = u;
-            document.getElementById('display-name').textContent = u.toUpperCase();
-            document.getElementById('display-missions').textContent = globalData[u].missions;
-            document.getElementById('auth-overlay').style.display = 'none';
-            if(u === 'kraaxen' && p === '123456') {
-                document.getElementById('dev-btn').style.display = 'block';
-            }
-        }
-    }
-
-    function devKillAll() {
-        titans.forEach(t => t.dead = true);
-        document.getElementById('sync-val').textContent = "100";
-        checkKill([]);
-    }
-
-    async function devBanUser() {
-        const target = document.getElementById('banUserInput').value.trim();
-        if(!target) return;
-        if(globalData[target]) {
-            globalData[target].banned = true;
-            await syncGlobalData(true);
-            alert(target + " banned.");
-        } else { alert("Not found."); }
-    }
-
-    async function devResetDatabase() {
-        if(confirm("WIPE GLOBAL DATA?")) {
-            globalData = {};
-            await syncGlobalData(true);
-            location.reload();
-        }
-    }
-
-    function guestPlay() { document.getElementById('auth-overlay').style.display = 'none'; }
-    function signOut() { location.reload(); }
-
-    async function toggleLB() {
-        const p = document.getElementById('leaderboard-panel');
-        p.classList.toggle('active');
-        if(p.classList.contains('active')) {
-            document.getElementById('lb-list').innerHTML = "Fetching...";
-            await syncGlobalData();
-            const sorted = Object.entries(globalData)
-                .filter(([name, data]) => !data.banned)
-                .sort((a,b) => b[1].missions - a[1].missions);
-            document.getElementById('lb-list').innerHTML = sorted.map(([name, data], i) => `
-                <div class="rank-item"><span>${i+1}. ${name}</span><span style="color:var(--neon-green)">${data.missions}</span></div>
-            `).join('');
-        }
-    }
-
-    function toggleCredits() {
-        const c = document.getElementById('creditsContent');
-        const b = document.getElementById('creditsBtn');
-        const isVis = c.style.display === 'block';
-        c.style.display = isVis ? 'none' : 'block';
-        b.textContent = isVis ? '▼ Credits' : '▲ Credits';
-    }
-
+    let titans = [], paths = [], currentPath = [], drawing = false, grid = true, customMode = false;
+    
+    const USERS = { "kraaxeN": "admin123", "Damter": "gridking", "Cuternest": "mapper" };
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
     const imgs = { map: new Image(), basic: new Image(), abnormal: new Image(), skull: new Image(), grid: new Image() };
     imgs.map.src = 'outskirts.png'; imgs.basic.src = 'basic.png';
     imgs.abnormal.src = 'abnormal.png'; imgs.skull.src = 'skull.png'; imgs.grid.src = 'grid.png';
 
-    let titans = [], paths = [], currentPath = [], drawing = false, grid = true, customMode = false;
+    const missionPoly = [
+        {x: 280, y: 70}, {x: 750, y: 80}, {x: 780, y: 350},
+        {x: 720, y: 600}, {x: 400, y: 650}, {x: 180, y: 620},
+        {x: 150, y: 400}, {x: 220, y: 150}
+    ];
+
+    function isPointInPoly(pt, poly) {
+        let isInside = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+            if (((poly[i].y > pt.y) !== (poly[j].y > pt.y)) &&
+                (pt.x < (poly[j].x - poly[i].x) * (pt.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) isInside = !isInside;
+        }
+        return isInside;
+    }
+
+    function toggleAuthMode(reg) {
+        document.getElementById('auth-title').textContent = reg ? "CREATE ACCOUNT" : "ACCESS REQUIRED";
+        document.getElementById('login-buttons').style.display = reg ? 'none' : 'block';
+    }
+
+    function handleAuth() {
+        const u = document.getElementById('usernameInput').value;
+        const p = document.getElementById('passwordInput').value;
+        if (USERS[u] === p) {
+            document.getElementById('display-name').textContent = u.toUpperCase();
+            document.getElementById('auth-overlay').style.display = 'none';
+        }
+    }
+
+    function guestPlay() { document.getElementById('auth-overlay').style.display = 'none'; }
 
     function generate() {
-        isCheatMode = false;
-        drawing = false; // RESET DRAWING STATE
-        paths = []; 
-        currentPath = []; 
-        document.getElementById('status-indicator').textContent = "CADET MISSION ACTIVE";
-        document.getElementById('status-indicator').style.color = "var(--neon-green)";
-        titans = [];
-        for(let i=0; i<40; i++) {
-            let pos = getRandomPointInPoly(spawnPolygon);
-            let type = Math.random() < 0.8 ? 'basic' : 'abnormal';
-            titans.push({ x: pos.x, y: pos.y, type: type, dead: false, float: 20 });
+        titans = []; paths = [];
+        const count = parseInt(document.getElementById('spawnCount').value) || 40;
+        for(let i=0; i < count; i++) {
+            let pt = {x: 0, y: 0}, valid = false;
+            while(!valid) {
+                pt.x = Math.random() * 800; pt.y = Math.random() * 800;
+                if (isPointInPoly(pt, missionPoly)) valid = true;
+            }
+            // scale: 0 is for the pop-up animation when they die
+            titans.push({ x: pt.x, y: pt.y, type: Math.random() < 0.8 ? 'basic' : 'abnormal', dead: false, skullScale: 0 });
         }
-        document.getElementById('sync-val').textContent = '0';
+        updateUI();
+        setMode('odm');
     }
 
     function createBlankMap() {
-        isCheatMode = true;
-        drawing = false;
-        document.getElementById('status-indicator').textContent = "PRACTICE MODE (NO SCORE)";
-        document.getElementById('status-indicator').style.color = "var(--neon-red)";
         titans = []; paths = []; currentPath = [];
-        document.getElementById('sync-val').textContent = '0';
-        if(!customMode) toggleMode();
+        updateUI();
+        setMode('place');
+    }
+
+    function setMode(mode) {
+        customMode = (mode === 'place');
+        document.getElementById('ui-mode').textContent = customMode ? "Mode: Placement" : "Mode: ODM";
+        document.getElementById('btn-place').className = customMode ? 'btn-active' : '';
+        document.getElementById('btn-odm').className = !customMode ? 'btn-active' : '';
+    }
+
+    function updateUI() {
+        document.getElementById('titan-count').textContent = titans.filter(t => !t.dead).length;
+        updateSync();
+    }
+
+    canvas.onmousedown = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        if (customMode) {
+            if (isPointInPoly({x, y}, missionPoly)) {
+                titans.push({x, y, type: document.getElementById('titanType').value, dead: false, skullScale: 0});
+                updateUI();
+            }
+        } else {
+            drawing = true;
+            currentPath = [{x, y}];
+        }
+    };
+
+    canvas.onmousemove = (e) => {
+        if (!drawing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        currentPath.push({x, y});
+        if (currentPath.length >= 2) {
+            const p1 = currentPath[currentPath.length-2], p2 = currentPath[currentPath.length-1];
+            titans.forEach(t => { 
+                if(!t.dead && distToSeg(t, p1, p2) < 20) {
+                    t.dead = true;
+                    t.skullScale = 3.0; // Trigger the "pop" animation
+                }
+            });
+        }
+        updateSync();
+    };
+
+    window.onmouseup = () => {
+        if(drawing) {
+            paths.push([...currentPath]); currentPath = []; drawing = false;
+            if (document.getElementById('sync-val').textContent === "100" && titans.length > 0) {
+                document.getElementById('display-missions').textContent = parseInt(document.getElementById('display-missions').textContent) + 1;
+                alert("Area Secured!");
+                generate();
+            }
+        }
+        updateUI();
+    };
+
+    function updateSync() {
+        const killed = titans.filter(t => t.dead).length;
+        document.getElementById('sync-val').textContent = titans.length > 0 ? Math.floor((killed / titans.length) * 100) : 0;
     }
 
     function distToSeg(p, v, w) {
         const l2 = Math.pow(v.x-w.x, 2) + Math.pow(v.y-w.y, 2);
         if(l2 == 0) return Math.hypot(p.x-v.x, p.y-v.y);
-        let t = ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y))/l2;
-        t = Math.max(0, Math.min(1, t));
+        let t = Math.max(0, Math.min(1, ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y))/l2));
         return Math.hypot(p.x-(v.x+t*(w.x-v.x)), p.y-(v.y+t*(w.y-v.y)));
-    }
-
-    async function checkKill(seg) {
-        const p1 = seg.length >= 2 ? seg[seg.length-2] : null;
-        const p2 = seg.length >= 2 ? seg[seg.length-1] : null;
-        titans.forEach(t => {
-            if(!t.dead && p1 && p2 && distToSeg(t, p1, p2) < 20) { t.dead = true; }
-        });
-        const killed = titans.filter(x => x.dead).length;
-        const perc = titans.length > 0 ? Math.floor((killed/titans.length)*100) : 0;
-        document.getElementById('sync-val').textContent = perc;
-
-        if(perc === 100 && currentUser && !isCheatMode && titans.length > 0) {
-            drawing = false; // FORCE DRAWING OFF BEFORE ALERT
-            globalData[currentUser].missions++;
-            await syncGlobalData(true);
-            document.getElementById('display-missions').textContent = globalData[currentUser].missions;
-            alert("MISSION COMPLETE!");
-            generate();
-        }
     }
 
     function draw() {
         ctx.clearRect(0,0,800,800);
         ctx.drawImage(imgs.map, 0, 0, 800, 800);
         if(grid) ctx.drawImage(imgs.grid, 0, 0, 800, 800);
-        
-        const killedCount = titans.filter(x => x.dead).length;
-        if(killedCount === 0 && titans.length > 0) {
-            ctx.fillStyle = "rgba(0, 212, 255, 0.1)";
-            ctx.fillRect(0, 700, 800, 100);
-        }
 
         titans.forEach(t => {
-            ctx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-20, t.y-20, 40, 40);
+            // Draw Titan
+            ctx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-15, t.y-15, 30, 30);
+            
+            // Draw Animated Skull
             if(t.dead) {
-                if(t.float > 0) t.float -= 1.5;
-                ctx.save(); ctx.shadowBlur = 15; ctx.shadowColor = 'red';
-                ctx.drawImage(imgs.skull, t.x-15, t.y-15 + t.float, 30, 30); ctx.restore();
+                // Smoothly shrink skull scale back to 1.0
+                if(t.skullScale > 1.0) t.skullScale -= 0.15;
+                const size = 24 * t.skullScale;
+                ctx.drawImage(imgs.skull, t.x - size/2, t.y - size/2, size, size);
             }
         });
-        ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 3;
+
+        // Draw ODM Paths
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--neon-blue'); 
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
         [...paths, currentPath].forEach(p => {
             if(p.length < 2) return;
             ctx.beginPath(); ctx.moveTo(p[0].x, p[0].y);
@@ -376,51 +359,11 @@
         requestAnimationFrame(draw);
     }
 
-    canvas.onmousedown = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left, y = e.clientY - rect.top;
-        if(customMode) {
-            isCheatMode = true;
-            titans.push({x, y, type: document.getElementById('titanType').value, dead: false, float: 0});
-        } else { 
-            const killedCount = titans.filter(t => t.dead).length;
-            if(killedCount === 0 && titans.length > 0 && y < 700) {
-                document.getElementById('status-indicator').textContent = "LOCKED: START FROM BOTTOM SECTOR";
-                setTimeout(() => { if(!isCheatMode) document.getElementById('status-indicator').textContent = "CADET MISSION ACTIVE"; }, 2000);
-                return;
-            }
-            drawing = true; 
-            currentPath = [{x, y}]; 
-        }
-    };
-    canvas.onmousemove = (e) => { 
-        if(drawing) { 
-            const r = canvas.getBoundingClientRect(); 
-            currentPath.push({x: e.clientX - r.left, y: e.clientY - r.top}); 
-            checkKill(currentPath); 
-        } 
-    };
-
-    // GLOBAL MOUSE UP FIX
-    window.addEventListener('mouseup', () => {
-        if(drawing) {
-            paths.push([...currentPath]);
-            drawing = false;
-            currentPath = [];
-        }
-    });
-
-    function undo() { paths.pop(); titans.forEach(t => t.dead = false); document.getElementById('sync-val').textContent = '0'; }
-    function clearPathsOnly() { paths = []; titans.forEach(t => t.dead = false); document.getElementById('sync-val').textContent = '0'; }
+    function undo() { paths.pop(); titans.forEach(t => { t.dead = false; t.skullScale = 0; }); updateUI(); }
+    function clearPathsOnly() { paths = []; titans.forEach(t => { t.dead = false; t.skullScale = 0; }); updateUI(); }
     function toggleGrid() { grid = !grid; }
-    function toggleMode() { 
-        customMode = !customMode; 
-        document.getElementById('modeBtn').textContent = customMode ? "Mode: Placement" : "Mode: ODM";
-    }
-    
-    syncGlobalData().then(() => {
-        imgs.map.onload = () => { generate(); draw(); };
-    });
+
+    imgs.map.onload = () => { generate(); draw(); };
 </script>
 </body>
 </html>
