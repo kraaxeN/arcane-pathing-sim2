@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Arcane ODM Trainer - Outskirts</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0; 
+      padding: 20px;
+      display: flex; 
+      flex-direction: row; 
+      justify-content: center;
+      align-items: flex-start;
+      background-image: url('bg.png'); /* Full site background */
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    /* Semi-transparent overlays for the controls to keep them readable over the BG */
+    #controls-left, #controls-right {
+      display: flex; 
+      flex-direction: column; 
+      margin: 0 20px;
+      background: rgba(26, 26, 26, 0.85); 
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #444;
+    }
+
+    #user-banner {
+      width: 250px; 
+      margin-top: 25px;
+      border-radius: 12px;
+      border: 2px solid #555;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    #controls-left button, #controls-right button, #titanType {
+      margin: 5px 0; 
+      padding: 10px 15px; 
+      font-size: 14px; 
+      cursor: pointer; 
+      width: 175px;
+      background: #333; 
+      color: white; 
+      border: 1px solid #555; 
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+
+    #controls-right button {
+      width: 250px;
+    }
+
+    #controls-left button:hover, #controls-right button:hover { background: #555; }
+    .btn-green { background: #2e7d32 !important; font-weight: bold; }
+    .btn-green:hover { background: #388e3c !important; }
+    .btn-blank { background: #555 !important; font-weight: bold; }
+    
+    canvas {
+      border: 3px solid #444; 
+      cursor: crosshair; 
+      background-color: #000;
+      box-shadow: 0 0 20px rgba(0,0,0,0.7);
+    }
+
+    #titanCount {
+      margin-top: 15px; 
+      font-weight: bold; 
+      color: #ffcc00;
+      font-size: 18px;
+    }
+
+    #modeIndicator {
+      margin-top: 10px; 
+      font-weight: bold; 
+      color: #00ff00; 
+    }
+
+    .credits {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #444;
+      font-size: 18px; 
+      line-height: 2.2;
+    }
+
+    .name-kraaxen {
+      color: #00d4ff; 
+      font-weight: 900;
+      font-size: 22px;
+      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    }
+    .name-damter {
+      color: #2ecc71; 
+      font-weight: 900;
+      font-size: 22px;
+      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    }
+    .name-cuternest {
+      color: #e74c3c; 
+      font-weight: 900;
+      font-size: 22px;
+      text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    }
+    .credit-desc {
+      color: #ccc;
+      font-size: 14px;
+      font-weight: normal;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls-left">
+    <button id="undoPath">Undo</button>
+    <button id="redoPath">Redo</button>
+    <button id="clearPath">Clear Path</button>
+    <button id="regen" class="btn-green">New Titan Path</button>
+    <button id="blankMap" class="btn-blank">Create Blank Map</button>
+    <button id="drawMode">ODM</button>
+    <button id="customMode">Place Titans</button>
+    <select id="titanType">
+      <option value="basic">Basic Titan</option>
+      <option value="abnormal">Abnormal Titan</option>
+    </select>
+    <div id="modeIndicator">Mode: ODM</div>
+  </div>
+
+  <canvas id="map" width="800" height="800"></canvas>
+
+  <div id="controls-right">
+    <button id="toggleGrid">Toggle Grid</button>
+    <button id="cadetMode">Cadet</button>
+    <button id="nightmareMode">Nightmare</button>
+    <p id="titanCount">Titans on map: 0</p>
+    
+    <div class="credits">
+      <span class="name-kraaxen">kraaxeN</span> <br><span class="credit-desc">- main idea / coding</span><br>
+      <span class="name-damter">Damter</span> <br><span class="credit-desc">- general ideas + grid layout</span><br>
+      <span class="name-cuternest">Cuternest</span> <br><span class="credit-desc">- map design</span>
+    </div>
+
+    <img src="kraxbanner.png" id="user-banner" alt="kraaxeN Banner">
+  </div>
+
+  <script>
+    const canvas = document.getElementById("map");
+    const ctx = canvas.getContext("2d");
+
+    const mapImage = new Image(); mapImage.src = "outskirts.png";
+    const gridImage = new Image(); gridImage.src = "grid.png";
+    const basicImage = new Image(); basicImage.src = "basic.png";
+    const abnormalImage = new Image(); abnormalImage.src = "abnormal.png";
+    const skullImage = new Image(); skullImage.src = "skull.png";
+
+    // Polygon coordinates based on your latest diagram instructions
+    const spawnPolygon = [
+      {x: 60, y: 420},  {x: 80, y: 550},  {x: 175, y: 630}, 
+      {x: 380, y: 620}, {x: 600, y: 640}, {x: 770, y: 660}, 
+      {x: 775, y: 480}, {x: 760, y: 200}, {x: 780, y: 45},  
+      {x: 600, y: 40},  {x: 230, y: 40},  {x: 210, y: 150}, 
+      {x: 180, y: 300}, {x: 60, y: 410}                   
+    ];
+
+    const noSpawnBox = { x: 520, y: 430, w: 90, h: 75 };
+
+    let titans = [];
+    let pathSegments = [];
+    let redoSegments = [];
+    let currentSegment = [];
+    let titanDifficulty = "nightmare"; 
+    let gridVisible = true;
+    let customModeActive = false;
+
+    function isInsideSpawnZone(x, y) {
+      let inside = false;
+      for (let i = 0, j = spawnPolygon.length - 1; i < spawnPolygon.length; j = i++) {
+        const xi = spawnPolygon[i].x, yi = spawnPolygon[i].y;
+        const xj = spawnPolygon[j].x, yj = spawnPolygon[j].y;
+        const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      const inBlackBox = x >= noSpawnBox.x && x <= noSpawnBox.x + noSpawnBox.w &&
+                         y >= noSpawnBox.y && y <= noSpawnBox.y + noSpawnBox.h;
+      return inside && !inBlackBox;
+    }
+
+    function generateTitans() {
+      titans = [];
+      pathSegments = [];
+      redoSegments = [];
+      const targetCount = Math.floor(Math.random() * (44 - 37 + 1)) + 37;
+      let attempts = 0;
+      const minDistance = 55;
+
+      while (titans.length < targetCount && attempts < 4000) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        if (isInsideSpawnZone(x, y)) {
+          let tooClose = false;
+          if (Math.random() > 0.15) {
+            for (const other of titans) {
+              if (Math.hypot(x - other.x, y - other.y) < minDistance) {
+                tooClose = true; break;
+              }
+            }
+          }
+          if (!tooClose) {
+            let type = "basic";
+            if (titanDifficulty === "cadet") type = Math.random() < 0.5 ? "basic" : "abnormal";
+            else if (titanDifficulty === "nightmare") type = "abnormal";
+            titans.push({ x, y, type, markedBy: null });
+          }
+        }
+        attempts++;
+      }
+      draw();
+    }
+
+    function distancePointToLine(px, py, x1, y1, x2, y2) {
+      const A = px - x1, B = py - y1, C = x2 - x1, D = y2 - y1;
+      const dot = A * C + B * D;
+      const len_sq = C * C + D * D;
+      let param = len_sq !== 0 ? dot / len_sq : -1;
+      let xx, yy;
+      if (param < 0) { xx = x1; yy = y1; }
+      else if (param > 1) { xx = x2; yy = y2; }
+      else { xx = x1 + param * C; yy = y1 + param * D; }
+      return Math.hypot(px - xx, py - yy);
+    }
+
+    function applyKillLogic(segIndex) {
+      const seg = pathSegments[segIndex];
+      for (const t of titans) {
+        if (t.markedBy !== null && t.markedBy < segIndex) continue;
+        for (let i = 0; i < seg.length - 1; i++) {
+          if (distancePointToLine(t.x, t.y, seg[i].x, seg[i].y, seg[i+1].x, seg[i+1].y) < 22) {
+            t.markedBy = segIndex;
+            break;
+          }
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (mapImage.complete) ctx.drawImage(mapImage, 0, 0, 800, 800);
+      if (gridVisible && gridImage.complete) ctx.drawImage(gridImage, 0, 0, 800, 800);
+
+      titans.forEach(t => {
+        const img = t.type === "abnormal" ? abnormalImage : basicImage;
+        ctx.drawImage(img, t.x - 20, t.y - 20, 40, 40);
+        if (t.markedBy !== null) ctx.drawImage(skullImage, t.x - 17, t.y - 17, 34, 34);
+      });
+
+      ctx.strokeStyle = "white"; ctx.lineWidth = 3; ctx.lineJoin = "round";
+      [...pathSegments, currentSegment].forEach(seg => {
+        if (seg.length < 2) return;
+        ctx.beginPath(); ctx.moveTo(seg[0].x, seg[0].y);
+        for (let i = 1; i < seg.length; i++) ctx.lineTo(seg[i].x, seg[i].y);
+        ctx.stroke();
+      });
+
+      document.getElementById("titanCount").textContent = `Titans on map: ${titans.length}`;
+    }
+
+    let isDrawing = false;
+    canvas.addEventListener("mousedown", (e) => {
+      isDrawing = true; currentSegment = [];
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left, y = e.clientY - rect.top;
+      
+      if (customModeActive) {
+        if (titans.length < 44 && isInsideSpawnZone(x, y)) {
+          titans.push({ x, y, type: document.getElementById("titanType").value, markedBy: null });
+        }
+      } else {
+        currentSegment.push({x, y});
+      }
+      draw();
+    });
+
+    canvas.addEventListener("mousemove", (e) => {
+      if (!isDrawing || customModeActive) return;
+      const rect = canvas.getBoundingClientRect();
+      currentSegment.push({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+      draw();
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isDrawing && !customModeActive && currentSegment.length > 1) {
+        pathSegments.push([...currentSegment]);
+        applyKillLogic(pathSegments.length - 1);
+        redoSegments = [];
+      }
+      isDrawing = false; currentSegment = []; draw();
+    });
+
+    document.getElementById("undoPath").onclick = () => {
+      if (pathSegments.length > 0) {
+        const lastIdx = pathSegments.length - 1;
+        redoSegments.push(pathSegments.pop());
+        titans.forEach(t => { if(t.markedBy === lastIdx) t.markedBy = null; });
+        draw();
+      }
+    };
+
+    document.getElementById("redoPath").onclick = () => {
+      if (redoSegments.length > 0) {
+        pathSegments.push(redoSegments.pop());
+        applyKillLogic(pathSegments.length - 1);
+        draw();
+      }
+    };
+
+    document.getElementById("clearPath").onclick = () => { 
+      pathSegments = []; redoSegments = []; titans.forEach(t => t.markedBy = null); draw(); 
+    };
+
+    document.getElementById("regen").onclick = () => generateTitans();
+
+    document.getElementById("blankMap").onclick = () => {
+      titans = []; pathSegments = []; redoSegments = []; 
+      customModeActive = true;
+      document.getElementById("modeIndicator").textContent = "Mode: Placing Titans";
+      document.getElementById("modeIndicator").style.color = "#ff4444";
+      draw();
+    };
+
+    document.getElementById("drawMode").onclick = () => {
+      customModeActive = false;
+      document.getElementById("modeIndicator").textContent = "Mode: ODM";
+      document.getElementById("modeIndicator").style.color = "#00ff00";
+    };
+
+    document.getElementById("customMode").onclick = () => {
+      customModeActive = true;
+      document.getElementById("modeIndicator").textContent = "Mode: Placing Titans";
+      document.getElementById("modeIndicator").style.color = "#ff4444";
+    };
+
+    document.getElementById("toggleGrid").onclick = () => { gridVisible = !gridVisible; draw(); };
+    document.getElementById("cadetMode").onclick = () => { titanDifficulty = "cadet"; generateTitans(); };
+    document.getElementById("nightmareMode").onclick = () => { titanDifficulty = "nightmare"; generateTitans(); };
+
+    let loaded = 0;
+    function checkLoad() { if (++loaded === 5) generateTitans(); }
+    [mapImage, gridImage, basicImage, abnormalImage, skullImage].forEach(img => img.onload = checkLoad);
+  </script>
+</body>
+</html>
