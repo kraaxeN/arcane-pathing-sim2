@@ -3,289 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcane ODM Trainer | Kraaxen</title>
+    <title>Tactical Map Editor</title>
     <style>
         :root {
             --neon-blue: #00d4ff;
             --neon-green: #2ecc71;
-            --neon-red: #e74c3c;
+            --neon-red: #ff4757;
             --neon-purple: #bc13fe;
-            --panel-bg: rgba(10, 10, 10, 0.9);
-            --border-color: #444;
+            --panel-bg: rgba(10, 10, 10, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent-glow: 0 0 20px rgba(0, 212, 255, 0.3);
         }
 
         body {
             font-family: 'Orbitron', sans-serif;
             margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
-            background: #05080a url('bg.png') no-repeat center center fixed;
+            /* Added background image here */
+            background: #020406 url('bg.png') no-repeat center center fixed;
             background-size: cover;
             color: #e0e0e0; min-height: 100vh; overflow: hidden;
         }
 
-        /* --- AUTH --- */
-        #auth-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-            z-index: 1000; display: flex; justify-content: center; align-items: center;
+        #boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: flex; 
+            flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 1s ease-out;
         }
-        .auth-box {
-            background: var(--panel-bg); padding: 40px; border: 1px solid var(--border-color);
-            border-radius: 10px; text-align: center; width: 320px;
-            box-shadow: 0 0 20px rgba(0,0,0,1);
+        .boot-text {
+            color: var(--neon-blue); font-size: 14px; margin: 5px;
+            overflow: hidden; border-right: 2px solid var(--neon-blue);
+            white-space: nowrap; width: 0;
+            animation: typing 1s steps(30, end) forwards, blink 0.5s step-end infinite;
         }
+        @keyframes typing { from { width: 0 } to { width: 300px } }
+        @keyframes blink { from, to { border-color: transparent } 50% { border-color: var(--neon-blue) } }
 
         .main-wrapper {
-            display: flex; align-items: flex-start; gap: 20px;
+            display: flex; align-items: stretch; gap: 25px;
             position: relative; z-index: 10;
+            animation: fadeIn 1.5s ease-out;
+            padding: 20px;
         }
 
         .side-panel {
             background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            width: 220px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            min-height: 600px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 240px;
+            display: flex; flex-direction: column; gap: 14px;
+            box-shadow: var(--accent-glow);
+            transition: all 0.3s ease;
         }
-
-        /* --- CREDITS STYLING --- */
-        .credits-container { margin-top: 20px; padding-top: 15px; border-top: 1px solid #333; }
-        .credits-name { 
-            display: block; 
-            margin-top: 12px; 
-            font-size: 20px; 
-            font-weight: 900; 
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        .glow-purple { color: #fff; text-shadow: 0 0 5px #fff, 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple); }
-        .glow-green { color: #fff; text-shadow: 0 0 5px #fff, 0 0 10px var(--neon-green), 0 0 20px var(--neon-green); }
-        .glow-red { color: #fff; text-shadow: 0 0 5px #fff, 0 0 10px var(--neon-red), 0 0 20px var(--neon-red); }
 
         .canvas-container {
-            border: 4px solid #111;
-            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 0 60px rgba(0,0,0,0.8);
             position: relative;
             background: #000;
         }
 
         button, select, input {
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 10px;
-            font-family: 'Orbitron';
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 5px;
+            background: rgba(255,255,255,0.05);
+            color: #fff; border: 1px solid var(--glass-border);
+            padding: 12px; font-family: 'Orbitron'; font-size: 11px;
+            cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px; text-transform: uppercase; letter-spacing: 1px;
         }
-        button:hover { background: #333; border-color: #888; transform: translateY(-1px); }
+
+        button:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-green { color: var(--neon-green); border-color: rgba(46, 204, 113, 0.3); }
+        .btn-green:hover { background: rgba(46, 204, 113, 0.15); box-shadow: 0 0 20px rgba(46, 204, 113, 0.3); }
         
-        .btn-green { background: #1b4d2e !important; }
-        .btn-green:hover { background: #266b40 !important; box-shadow: 0 0 15px var(--neon-green); }
-        .btn-active { border-color: var(--neon-blue) !important; box-shadow: 0 0 15px var(--neon-blue); }
+        .btn-active { 
+            background: rgba(0, 212, 255, 0.1); 
+            border-color: var(--neon-blue); 
+            box-shadow: 0 0 15px var(--neon-blue); 
+        }
 
-        .stat-label { font-size: 13px; font-weight: bold; color: #aaa; }
-        .mode-indicator { font-size: 14px; color: var(--neon-green); font-weight: bold; margin-top: 10px; text-align: center; text-shadow: 0 0 10px var(--neon-green); }
+        .credits-name { 
+            display: block; font-size: 18px; font-weight: 900; 
+            margin-bottom: 4px; text-align: center;
+        }
+        .glow-purple { color: #fff; text-shadow: 0 0 10px var(--neon-purple); }
+        .glow-green { color: #fff; text-shadow: 0 0 10px var(--neon-green); }
+        .glow-red { color: #fff; text-shadow: 0 0 10px var(--neon-red); }
 
-        /* --- BANNER --- */
         .banner-link {
-            margin-top: auto;
-            display: block;
-            text-decoration: none;
-            padding: 4px;
-            border-radius: 8px;
-            background: linear-gradient(45deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
-            background-size: 400%;
-            animation: rainbow 10s linear infinite;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .banner-link:hover { transform: scale(1.05); }
-        .banner-img {
-            width: 100%;
-            display: block;
-            border-radius: 6px;
-        }
-        
-        @keyframes rainbow {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            margin-top: auto; border-radius: 12px; overflow: hidden;
+            border: 2px solid transparent; transition: 0.3s;
+            background: linear-gradient(45deg, #00d4ff, #bc13fe); padding: 2px;
         }
 
+        #mission-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 10000;
+            justify-content: center; align-items: center; backdrop-filter: blur(12px);
+        }
+        .modal-box {
+            background: #050505; border: 1px solid var(--neon-blue); padding: 40px;
+            border-radius: 24px; text-align: center; box-shadow: 0 0 100px rgba(0, 212, 255, 0.2);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
         canvas { display: block; cursor: crosshair; }
+        hr { border: 0; border-top: 1px solid var(--glass-border); margin: 10px 0; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<div id="auth-overlay">
-    <div class="auth-box">
-        <h2 id="auth-title" style="color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue);">ACCESS REQUIRED</h2>
-        <input type="text" id="usernameInput" placeholder="USERNAME" style="width: 90%;"><br>
-        <input type="password" id="passwordInput" placeholder="PASSWORD" style="width: 90%; margin-top: 10px;"><br>
-        
-        <div id="login-buttons">
-            <button onclick="handleAuth()" style="width: 100%; margin-top: 15px;">Login</button>
-            <button onclick="toggleAuthMode(true)" style="width: 100%; margin-top: 5px; color: var(--neon-blue);">Create Account</button>
-        </div>
-        <button onclick="guestPlay()" style="width: 100%; margin-top: 10px; opacity: 0.5;">Guest Play</button>
-        <p id="auth-error" style="color: red; font-size: 11px; margin-top: 10px; display: none;"></p>
+<div id="boot-screen">
+    <div class="boot-text">INITIALIZING...</div>
+</div>
+
+<div id="mission-modal">
+    <div class="modal-box">
+        <h1 style="color:var(--neon-blue); font-weight:900;">CLEARED</h1>
+        <div style="font-size: 20px; margin: 15px 0;">TIME: <span id="modal-time" style="color:var(--neon-green)">0.00s</span></div>
+        <canvas id="modal-preview-canvas" width="800" height="800" style="width:300px; height:300px; border-radius:10px; margin: 20px auto; border: 1px solid #333;"></canvas>
+        <button onclick="closeModal()" class="btn-green" style="width: 100%; font-size: 16px; padding: 15px;">CONTINUE</button>
     </div>
 </div>
 
 <div class="main-wrapper">
     <div class="side-panel">
         <button onclick="undo()">Undo</button>
-        <button onclick="clearPathsOnly()">Clear Path</button>
+        <button onclick="resetRun()" style="color:var(--neon-red)">Reset Run</button>
         
-        <div style="border: 1px solid #333; padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.03);">
-            <div class="stat-label">Spawn Amount:</div>
-            <input type="number" id="spawnCount" value="40" min="1" max="200" style="width: 85%; margin-top: 5px;">
-            <button onclick="generate()" class="btn-green" style="width: 100%; margin-top: 10px;">Generate</button>
+        <div style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.2);">
+            <div style="font-size: 10px; opacity: 0.6; margin-bottom: 5px;">SPAWN COUNT:</div>
+            <input type="number" id="spawnCount" value="40" min="1" max="200" style="width: 85%;">
+            <button onclick="generate()" class="btn-green" style="width: 100%; margin-top: 10px;">Spawn Titans</button>
         </div>
 
-        <button onclick="createBlankMap()" style="border-color: var(--neon-red); color: var(--neon-red);">Create Blank Map</button>
-        <hr style="border:0; border-top: 1px solid #333; width: 100%;">
-        <button id="btn-odm" class="btn-active" onclick="setMode('odm')">ODM</button>
-        <button id="btn-place" onclick="setMode('place')">Place Titans</button>
+        <button onclick="createBlankMap()">Clear Canvas</button>
+        <button onclick="exportPreset()">Export Map</button>
+        <button onclick="importPreset()">Import Map</button>
+
+        <hr>
+        
+        <button id="btn-odm" class="btn-active" onclick="setMode('odm')">Draw Mode</button>
+        <button id="btn-place" onclick="setMode('place')">Edit Mode</button>
         <select id="titanType">
-            <option value="basic">Basic Titan</option>
-            <option value="abnormal">Abnormal Titan</option>
+            <option value="basic">Basic</option>
+            <option value="abnormal">Abnormal</option>
         </select>
-        <div class="mode-indicator" id="ui-mode">Mode: ODM</div>
+        <div id="status-msg" style="font-size: 10px; color: var(--neon-blue); text-align: center;">READY</div>
     </div>
 
     <div class="canvas-container">
-        <div style="position: absolute; top: 15px; width: 100%; text-align: center; pointer-events: none; z-index: 20;">
-            <span id="sync-val" style="font-size: 32px; color: var(--neon-green); font-weight: 900; text-shadow: 0 0 15px var(--neon-green), 2px 2px #000;">0</span>%
+        <div style="position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 20;">
+            <div style="font-size: 10px; letter-spacing: 2px;">PROGRESS</div>
+            <span id="sync-val" style="font-size: 40px; color: var(--neon-green); font-weight: 900; text-shadow: 0 0 20px var(--neon-green);">0</span>%
         </div>
         <canvas id="map" width="800" height="800"></canvas>
     </div>
 
     <div class="side-panel">
+        <div>
+            <div style="font-size: 10px; opacity: 0.6;">TIMER</div>
+            <div id="display-time" style="font-size: 28px; color: var(--neon-green); font-weight: 900;">0.00s</div>
+        </div>
+
         <button onclick="toggleGrid()">Toggle Grid</button>
+        <button onclick="exportImage()" class="btn-green">Save Image</button>
         
-        <div style="margin-top: 5px;">
-            <div class="stat-label">Titans Alive:</div>
-            <div id="titan-count" style="font-size: 24px; color: var(--neon-blue); font-weight: 900;">0</div>
+        <div>
+            <div style="font-size: 10px; opacity: 0.6;">REMAINING</div>
+            <div id="titan-count" style="font-size: 28px; color: var(--neon-blue); font-weight: 900;">0</div>
         </div>
 
         <div class="credits-container">
             <span class="credits-name glow-purple">kraaxeN</span>
-            <span style="font-size: 11px; opacity: 0.7;">- Lead Developer</span>
-            
             <span class="credits-name glow-green">Damter</span>
-            <span style="font-size: 11px; opacity: 0.7;">- Grid & Logic</span>
-            
             <span class="credits-name glow-red">Cuternest</span>
-            <span style="font-size: 11px; opacity: 0.7;">- Map & Visuals</span>
         </div>
 
         <a href="https://www.youtube.com/@kraaxeN" target="_blank" class="banner-link">
-            <img src="kraxbanner.png" alt="YouTube" class="banner-img">
+            <img src="kraxbanner.png" alt="YouTube" style="width:100%; display:block; border-radius:10px;">
         </a>
-
-        <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #333;">
-            <div style="font-size: 11px; color: #666;">USER: <span id="display-name" style="color:#aaa">GUEST</span></div>
-            <div style="font-size: 11px; color: #666;">CLEARED: <span id="display-missions" style="color:#aaa">0</span></div>
-        </div>
     </div>
 </div>
 
 <script>
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('boot-screen').style.opacity = '0';
+            setTimeout(() => { document.getElementById('boot-screen').style.display = 'none'; }, 1000);
+        }, 1000);
+    });
+
     let titans = [], paths = [], currentPath = [], drawing = false, grid = true, customMode = false;
-    
-    const USERS = { "kraaxeN": "admin123", "Damter": "gridking", "Cuternest": "mapper" };
+    let runCompleted = false, lastPoint = null, hasStarted = false, startTime = null, timerInterval = null;
+
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
+    const modalPreviewCanvas = document.getElementById('modal-preview-canvas');
+    const mCtx = modalPreviewCanvas.getContext('2d');
+
     const imgs = { map: new Image(), basic: new Image(), abnormal: new Image(), skull: new Image(), grid: new Image() };
     imgs.map.src = 'outskirts.png'; imgs.basic.src = 'basic.png';
     imgs.abnormal.src = 'abnormal.png'; imgs.skull.src = 'skull.png'; imgs.grid.src = 'grid.png';
 
-    const missionPoly = [
-        {x: 280, y: 70}, {x: 750, y: 80}, {x: 780, y: 350},
-        {x: 720, y: 600}, {x: 400, y: 650}, {x: 180, y: 620},
-        {x: 150, y: 400}, {x: 220, y: 150}
-    ];
+    const startZone = { x: 350, y: 720, w: 100, h: 80 };
+    const missionPoly = [{x: 320, y: 25}, {x: 600, y: 35}, {x: 765, y: 115}, {x: 775, y: 440}, {x: 770, y: 685}, {x: 630, y: 685}, {x: 520, y: 600}, {x: 400, y: 630}, {x: 180, y: 650}, {x: 115, y: 480}, {x: 100, y: 360}, {x: 230, y: 130}, {x: 290, y: 35}];
 
     function isPointInPoly(pt, poly) {
         let isInside = false;
         for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-            if (((poly[i].y > pt.y) !== (poly[j].y > pt.y)) &&
-                (pt.x < (poly[j].x - poly[i].x) * (pt.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) isInside = !isInside;
+            if (((poly[i].y > pt.y) !== (poly[j].y > pt.y)) && (pt.x < (poly[j].x - poly[i].x) * (pt.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) isInside = !isInside;
         }
         return isInside;
     }
 
-    function toggleAuthMode(reg) {
-        document.getElementById('auth-title').textContent = reg ? "CREATE ACCOUNT" : "ACCESS REQUIRED";
-        document.getElementById('login-buttons').style.display = reg ? 'none' : 'block';
-    }
-
-    function handleAuth() {
-        const u = document.getElementById('usernameInput').value;
-        const p = document.getElementById('passwordInput').value;
-        if (USERS[u] === p) {
-            document.getElementById('display-name').textContent = u.toUpperCase();
-            document.getElementById('auth-overlay').style.display = 'none';
-        }
-    }
-
-    function guestPlay() { document.getElementById('auth-overlay').style.display = 'none'; }
-
-    function generate() {
-        titans = []; paths = [];
-        const count = parseInt(document.getElementById('spawnCount').value) || 40;
-        for(let i=0; i < count; i++) {
-            let pt = {x: 0, y: 0}, valid = false;
-            while(!valid) {
-                pt.x = Math.random() * 800; pt.y = Math.random() * 800;
-                if (isPointInPoly(pt, missionPoly)) valid = true;
-            }
-            // scale: 0 is for the pop-up animation when they die
-            titans.push({ x: pt.x, y: pt.y, type: Math.random() < 0.8 ? 'basic' : 'abnormal', dead: false, skullScale: 0 });
-        }
-        updateUI();
-        setMode('odm');
-    }
-
     function createBlankMap() {
-        titans = []; paths = []; currentPath = [];
+        titans = [];
+        resetRun();
         updateUI();
-        setMode('place');
     }
 
-    function setMode(mode) {
-        customMode = (mode === 'place');
-        document.getElementById('ui-mode').textContent = customMode ? "Mode: Placement" : "Mode: ODM";
-        document.getElementById('btn-place').className = customMode ? 'btn-active' : '';
-        document.getElementById('btn-odm').className = !customMode ? 'btn-active' : '';
+    function openModal() {
+        document.getElementById('modal-time').textContent = document.getElementById('display-time').textContent;
+        mCtx.clearRect(0,0,800,800);
+        mCtx.drawImage(imgs.map, 0,0,800,800);
+        titans.forEach(t => {
+            mCtx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-15, t.y-15, 30, 30);
+            if(t.dead) mCtx.drawImage(imgs.skull, t.x-12, t.y-12, 24, 24);
+        });
+        mCtx.strokeStyle = "#00d4ff"; mCtx.lineWidth = 4;
+        paths.forEach(p => {
+            if(p.length < 2) return;
+            mCtx.beginPath(); mCtx.moveTo(p[0].x, p[0].y);
+            p.forEach(pt => mCtx.lineTo(pt.x, pt.y)); mCtx.stroke();
+        });
+        document.getElementById('mission-modal').style.display = 'flex';
     }
 
-    function updateUI() {
-        document.getElementById('titan-count').textContent = titans.filter(t => !t.dead).length;
-        updateSync();
-    }
+    function closeModal() { document.getElementById('mission-modal').style.display = 'none'; resetRun(); }
 
     canvas.onmousedown = (e) => {
         const rect = canvas.getBoundingClientRect();
         const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        if (e.button === 2 && customMode) { titans = titans.filter(t => Math.hypot(t.x - x, t.y - y) > 20); updateUI(); return; }
         if (customMode) {
-            if (isPointInPoly({x, y}, missionPoly)) {
-                titans.push({x, y, type: document.getElementById('titanType').value, dead: false, skullScale: 0});
-                updateUI();
-            }
+            if (isPointInPoly({x, y}, missionPoly)) { titans.push({x, y, type: document.getElementById('titanType').value, dead: false, skullScale: 0}); updateUI(); }
         } else {
-            drawing = true;
-            currentPath = [{x, y}];
+            if (!hasStarted) {
+                if (x >= startZone.x && x <= startZone.x + startZone.w && y >= startZone.y && y <= startZone.y + startZone.h) {
+                    hasStarted = true; drawing = true; currentPath = [{x, y}]; startTimer();
+                    document.getElementById('status-msg').textContent = "ACTIVE";
+                }
+            } else if (lastPoint && Math.hypot(x - lastPoint.x, y - lastPoint.y) < 45) { drawing = true; currentPath = [{x, y}]; }
         }
     };
+
+    function startTimer() { startTime = Date.now(); timerInterval = setInterval(() => { document.getElementById('display-time').textContent = ((Date.now() - startTime) / 1000).toFixed(2) + "s"; }, 10); }
+    function stopTimer() { clearInterval(timerInterval); }
 
     canvas.onmousemove = (e) => {
         if (!drawing) return;
@@ -294,76 +280,79 @@
         currentPath.push({x, y});
         if (currentPath.length >= 2) {
             const p1 = currentPath[currentPath.length-2], p2 = currentPath[currentPath.length-1];
-            titans.forEach(t => { 
-                if(!t.dead && distToSeg(t, p1, p2) < 20) {
-                    t.dead = true;
-                    t.skullScale = 3.0; // Trigger the "pop" animation
-                }
-            });
+            titans.forEach(t => { if(!t.dead && distToSeg(t, p1, p2) < 22) { t.dead = true; t.skullScale = 3.0; } });
         }
         updateSync();
     };
 
     window.onmouseup = () => {
         if(drawing) {
-            paths.push([...currentPath]); currentPath = []; drawing = false;
-            if (document.getElementById('sync-val').textContent === "100" && titans.length > 0) {
-                document.getElementById('display-missions').textContent = parseInt(document.getElementById('display-missions').textContent) + 1;
-                alert("Area Secured!");
-                generate();
+            paths.push([...currentPath]); lastPoint = currentPath[currentPath.length - 1]; currentPath = []; drawing = false;
+            if (document.getElementById('sync-val').textContent === "100" && titans.length > 0 && !runCompleted) {
+                stopTimer(); runCompleted = true; openModal();
             }
         }
         updateUI();
     };
 
-    function updateSync() {
-        const killed = titans.filter(t => t.dead).length;
-        document.getElementById('sync-val').textContent = titans.length > 0 ? Math.floor((killed / titans.length) * 100) : 0;
+    function undo() {
+        if (paths.length > 0) {
+            paths.pop(); titans.forEach(t => { t.dead = false; t.skullScale = 0; });
+            paths.forEach(p => { for(let i=0; i<p.length-1; i++) { titans.forEach(t => { if(!t.dead && distToSeg(t, p[i], p[i+1]) < 22) { t.dead = true; t.skullScale = 1.0; } }); } });
+            if (paths.length > 0) { lastPoint = paths[paths.length - 1].slice(-1)[0]; } 
+            else { lastPoint = null; hasStarted = false; stopTimer(); document.getElementById('display-time').textContent = "0.00s"; }
+            runCompleted = false; updateUI();
+        }
     }
 
-    function distToSeg(p, v, w) {
-        const l2 = Math.pow(v.x-w.x, 2) + Math.pow(v.y-w.y, 2);
-        if(l2 == 0) return Math.hypot(p.x-v.x, p.y-v.y);
-        let t = Math.max(0, Math.min(1, ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y))/l2));
-        return Math.hypot(p.x-(v.x+t*(w.x-v.x)), p.y-(v.y+t*(w.y-v.y)));
+    function resetRun() { stopTimer(); document.getElementById('display-time').textContent = "0.00s"; paths = []; currentPath = []; lastPoint = null; hasStarted = false; runCompleted = false; titans.forEach(t => { t.dead = false; t.skullScale = 0; }); updateUI(); }
+
+    function generate() {
+        resetRun(); titans = [];
+        const sectors = [{ x: 120, y: 410, w: 160, h: 220, weight: 0.15 }, { x: 300, y: 410, w: 180, h: 220, weight: 0.15 }, { x: 520, y: 410, w: 140, h: 250, weight: 0.15 }, { x: 680, y: 410, w: 100, h: 250, weight: 0.15 }, { x: 150, y: 50,  w: 600, h: 320, weight: 0.40 }];
+        const count = parseInt(document.getElementById('spawnCount').value) || 40;
+        sectors.forEach(s => {
+            const sc = Math.floor(count * s.weight);
+            for(let i=0; i < sc; i++) {
+                let pt = {x: 0, y: 0}, v = false, att = 0;
+                while(!v && att < 50) { pt.x = s.x + (Math.random() * s.w); pt.y = s.y + (Math.random() * s.h); if (isPointInPoly(pt, missionPoly)) v = true; att++; }
+                if(v) titans.push({ x: pt.x, y: pt.y, type: Math.random() < 0.8 ? 'basic' : 'abnormal', dead: false, skullScale: 0 });
+            }
+        });
+        updateUI(); setMode('odm');
     }
 
     function draw() {
         ctx.clearRect(0,0,800,800);
         ctx.drawImage(imgs.map, 0, 0, 800, 800);
         if(grid) ctx.drawImage(imgs.grid, 0, 0, 800, 800);
-
+        if (!hasStarted && !customMode) { ctx.strokeStyle = "rgba(0, 212, 255, 0.4)"; ctx.lineWidth = 2; ctx.strokeRect(startZone.x, startZone.y, startZone.w, startZone.h); }
+        if (lastPoint && !runCompleted) { ctx.fillStyle = "#ff4757"; ctx.beginPath(); ctx.arc(lastPoint.x, lastPoint.y, 6, 0, Math.PI * 2); ctx.fill(); }
         titans.forEach(t => {
-            // Draw Titan
             ctx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-15, t.y-15, 30, 30);
-            
-            // Draw Animated Skull
-            if(t.dead) {
-                // Smoothly shrink skull scale back to 1.0
-                if(t.skullScale > 1.0) t.skullScale -= 0.15;
-                const size = 24 * t.skullScale;
-                ctx.drawImage(imgs.skull, t.x - size/2, t.y - size/2, size, size);
-            }
+            if(t.dead) { if(t.skullScale > 1.0) t.skullScale -= 0.15; const s = 24 * t.skullScale; ctx.drawImage(imgs.skull, t.x - s/2, t.y - s/2, s, s); }
         });
-
-        // Draw ODM Paths
-        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--neon-blue'); 
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        [...paths, currentPath].forEach(p => {
-            if(p.length < 2) return;
-            ctx.beginPath(); ctx.moveTo(p[0].x, p[0].y);
-            p.forEach(pt => ctx.lineTo(pt.x, pt.y)); ctx.stroke();
-        });
+        ctx.strokeStyle = "#00d4ff"; ctx.lineWidth = 3; ctx.lineCap = "round";
+        [...paths, currentPath].forEach(p => { if(p.length < 2) return; ctx.beginPath(); ctx.moveTo(p[0].x, p[0].y); p.forEach(pt => ctx.lineTo(pt.x, pt.y)); ctx.stroke(); });
         requestAnimationFrame(draw);
     }
 
-    function undo() { paths.pop(); titans.forEach(t => { t.dead = false; t.skullScale = 0; }); updateUI(); }
-    function clearPathsOnly() { paths = []; titans.forEach(t => { t.dead = false; t.skullScale = 0; }); updateUI(); }
+    function setMode(m) { customMode = (m === 'place'); updateUI(); }
+    function updateUI() { 
+        document.getElementById('titan-count').textContent = titans.filter(t => !t.dead).length;
+        document.getElementById('btn-place').className = customMode ? 'btn-active' : '';
+        document.getElementById('btn-odm').className = !customMode ? 'btn-active' : '';
+        updateSync(); 
+    }
+    function updateSync() { const k = titans.filter(t => t.dead).length; document.getElementById('sync-val').textContent = titans.length > 0 ? Math.floor((k / titans.length) * 100) : 0; }
+    function distToSeg(p,v,w){ const l2 = Math.pow(v.x-w.x, 2) + Math.pow(v.y-w.y, 2); if(l2 == 0) return Math.hypot(p.x-v.x, p.y-v.y); let t = Math.max(0, Math.min(1, ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y))/l2)); return Math.hypot(p.x-(v.x+t*(w.x-v.x)), p.y-(v.y+t*(w.y-v.y))); }
     function toggleGrid() { grid = !grid; }
+    function exportPreset() { const s = titans.map(t => [Math.round(t.x), Math.round(t.y), t.type === 'basic' ? 0 : 1]); prompt("Copy Data:", btoa(JSON.stringify(s))); }
+    function importPreset() { const c = prompt("Paste Data:"); if(!c) return; try { titans = JSON.parse(atob(c)).map(t => ({x:t[0], y:t[1], type:t[2]===0?'basic':'abnormal', dead:false, skullScale:0})); resetRun(); } catch(e){alert("Error");} }
+    function exportImage() { const tc = document.createElement('canvas'); tc.width = tc.height = 800; const t = tc.getContext('2d'); t.drawImage(canvas, 0, 0); const l = document.createElement('a'); l.download = 'Map_Export.png'; l.href = tc.toDataURL(); l.click(); }
 
     imgs.map.onload = () => { generate(); draw(); };
+    canvas.oncontextmenu = (e) => e.preventDefault();
 </script>
 </body>
 </html>
