@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical Map Editor</title>
+    <title>Tactical Map Editor - Christmas Edition</title>
     <style>
         :root {
             --neon-blue: #00d4ff;
@@ -15,14 +15,55 @@
             --accent-glow: 0 0 20px rgba(0, 212, 255, 0.3);
         }
 
+        /* CANDY CANE CHRISTMAS MODE OVERRIDES */
+        body.christmas-mode {
+            --neon-blue: #ffffff; 
+            --neon-green: #ffffff; 
+            --neon-red: #ff3333;   /* Candy Red */
+            --accent-glow: 0 0 25px rgba(255, 51, 51, 0.4);
+            background: #050505 url('bgsnowy.png') no-repeat center center fixed !important;
+            background-size: cover !important;
+        }
+
+        /* Increased Transparency for Christmas Panels */
+        body.christmas-mode .side-panel {
+            border: 2px solid #ff3333;
+            background: rgba(20, 10, 10, 0.6) !important; /* More see-through for BG */
+            backdrop-filter: blur(10px);
+        }
+
+        #bg-snow-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        body.christmas-mode button:hover {
+            background: repeating-linear-gradient(
+                45deg,
+                #ff3333,
+                #ff3333 10px,
+                #ffffff 10px,
+                #ffffff 20px
+            ) !important;
+            color: #000 !important;
+            border-color: #ffffff !important;
+            box-shadow: 0 0 15px #ffffff;
+            text-shadow: none;
+        }
+
+        /* STANDARD STYLES */
         body {
             font-family: 'Orbitron', sans-serif;
             margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
             background: #020406 url('bg.png') no-repeat center center fixed;
             background-size: cover;
-            color: #e0e0e0; min-height: 100vh; overflow-x: hidden;
+            color: #e0e0e0; min-height: 100vh; overflow: hidden;
             touch-action: none;
+            transition: background 0.5s ease;
         }
 
         #boot-screen {
@@ -74,9 +115,9 @@
             box-shadow: 0 0 60px rgba(0,0,0,0.8);
             position: relative;
             background: #000;
+            z-index: 11;
         }
 
-        /* Fixed: Progress Bar outside of Map Area */
         .progress-header {
             background: rgba(0,0,0,0.8);
             padding: 10px 0;
@@ -95,13 +136,25 @@
         button:hover {
             background: rgba(255,255,255,0.1);
             border-color: var(--neon-blue);
-            box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
             transform: translateY(-2px);
         }
 
-        .btn-green { color: var(--neon-green); border-color: rgba(46, 204, 113, 0.3); }
-        .btn-green:hover { background: rgba(46, 204, 113, 0.15); box-shadow: 0 0 20px rgba(46, 204, 113, 0.3); }
-        .btn-active { background: rgba(0, 212, 255, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); }
+        .btn-green { color: var(--neon-green); border-color: var(--neon-green); }
+        .btn-green:hover { background: rgba(255, 255, 255, 0.1); box-shadow: 0 0 20px var(--neon-green); }
+        
+        .btn-active { 
+            background: rgba(0, 212, 255, 0.1); 
+            border-color: var(--neon-blue); 
+            box-shadow: 0 0 15px var(--neon-blue); 
+        }
+
+        .btn-xmas {
+            background: linear-gradient(45deg, #ff3333, #ffffff);
+            border: 1px solid #ff3333 !important;
+            color: #000 !important;
+            font-weight: 900;
+        }
 
         .credits-name { display: block; font-size: 18px; font-weight: 900; margin-bottom: 4px; text-align: center; }
         .glow-purple { color: #fff; text-shadow: 0 0 10px var(--neon-purple); }
@@ -124,6 +177,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
+
+<canvas id="bg-snow-layer"></canvas>
 
 <div id="boot-screen">
     <div class="boot-text">INITIALIZING...</div>
@@ -161,6 +216,7 @@
             <option value="basic">Basic</option>
             <option value="abnormal">Abnormal</option>
         </select>
+        <button onclick="toggleChristmas()" class="btn-xmas">🎄 Christmas Mode</button>
         <div id="status-msg" style="font-size: 10px; color: var(--neon-blue); text-align: center;">READY</div>
     </div>
 
@@ -207,20 +263,66 @@
         }, 1000);
     });
 
-    let titans = [], paths = [], currentPath = [], drawing = false, grid = true, customMode = false;
+    let titans = [], paths = [], currentPath = [], drawing = false, grid = true, customMode = false, isChristmas = false;
     let runCompleted = false, lastPoint = null, hasStarted = false, startTime = null, timerInterval = null;
+
+    const snowCanvas = document.getElementById('bg-snow-layer');
+    const sctx = snowCanvas.getContext('2d');
+    const snowParticles = [];
+    
+    function resizeSnow() {
+        snowCanvas.width = window.innerWidth;
+        snowCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeSnow);
+    resizeSnow();
+
+    for(let i=0; i<150; i++) {
+        snowParticles.push({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * window.innerHeight,
+            r: Math.random() * 3 + 1,
+            d: Math.random() * 1,
+            v: Math.random() * 1 + 0.5
+        });
+    }
 
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
     const modalPreviewCanvas = document.getElementById('modal-preview-canvas');
     const mCtx = modalPreviewCanvas.getContext('2d');
 
-    const imgs = { map: new Image(), basic: new Image(), abnormal: new Image(), skull: new Image(), grid: new Image() };
-    imgs.map.src = 'outskirts.png'; imgs.basic.src = 'basic.png';
-    imgs.abnormal.src = 'abnormal.png'; imgs.skull.src = 'skull.png'; imgs.grid.src = 'grid.png';
+    const imgs = { 
+        map: new Image(), 
+        basic: new Image(), 
+        abnormal: new Image(), 
+        skull: new Image(), 
+        mcpumpkin: new Image(),
+        grid: new Image() 
+    };
+    imgs.map.src = 'outskirts.png'; 
+    imgs.basic.src = 'basic.png';
+    imgs.abnormal.src = 'abnormal.png'; 
+    imgs.skull.src = 'skull.png'; 
+    imgs.mcpumpkin.src = 'mcpumpkin.png';
+    imgs.grid.src = 'grid.png';
 
     const startZone = { x: 350, y: 720, w: 100, h: 80 };
     const missionPoly = [{x: 320, y: 25}, {x: 600, y: 35}, {x: 765, y: 115}, {x: 775, y: 440}, {x: 770, y: 685}, {x: 630, y: 685}, {x: 520, y: 600}, {x: 400, y: 630}, {x: 180, y: 650}, {x: 115, y: 480}, {x: 100, y: 360}, {x: 230, y: 130}, {x: 290, y: 35}];
+
+    function toggleChristmas() {
+        isChristmas = !isChristmas;
+        if (isChristmas) {
+            document.body.classList.add('christmas-mode');
+            imgs.map.src = 'outskirtssnow.png';
+            generate(); // Refresh to show only abnormals
+        } else {
+            document.body.classList.remove('christmas-mode');
+            imgs.map.src = 'outskirts.png';
+            sctx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
+        }
+        updateUI();
+    }
 
     function getCoords(e) {
         const rect = canvas.getBoundingClientRect();
@@ -251,9 +353,14 @@
         mCtx.drawImage(imgs.map, 0,0,800,800);
         titans.forEach(t => {
             mCtx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-15, t.y-15, 30, 30);
-            if(t.dead) mCtx.drawImage(imgs.skull, t.x-12, t.y-12, 24, 24);
+            if(t.dead) {
+                // Asset swap for Christmas in modal
+                const killIcon = isChristmas ? imgs.mcpumpkin : imgs.skull;
+                mCtx.drawImage(killIcon, t.x-12, t.y-12, 24, 24);
+            }
         });
-        mCtx.strokeStyle = "#00d4ff"; mCtx.lineWidth = 4;
+        mCtx.strokeStyle = isChristmas ? "#ff3333" : "#00d4ff"; 
+        mCtx.lineWidth = 4;
         paths.forEach(p => {
             if(p.length < 2) return;
             mCtx.beginPath(); mCtx.moveTo(p[0].x, p[0].y);
@@ -269,7 +376,11 @@
         const {x, y} = getCoords(e);
         if (!e.touches && e.button === 2 && customMode) { titans = titans.filter(t => Math.hypot(t.x - x, t.y - y) > 20); updateUI(); return; }
         if (customMode) {
-            if (isPointInPoly({x, y}, missionPoly)) { titans.push({x, y, type: document.getElementById('titanType').value, dead: false, skullScale: 0}); updateUI(); }
+            if (isPointInPoly({x, y}, missionPoly)) { 
+                const type = isChristmas ? 'abnormal' : document.getElementById('titanType').value;
+                titans.push({x, y, type: type, dead: false, skullScale: 0}); 
+                updateUI(); 
+            }
         } else {
             if (!hasStarted) {
                 if (x >= startZone.x && x <= startZone.x + startZone.w && y >= startZone.y && y <= startZone.y + startZone.h) {
@@ -329,24 +440,51 @@
             for(let i=0; i < sc; i++) {
                 let pt = {x: 0, y: 0}, v = false, att = 0;
                 while(!v && att < 50) { pt.x = s.x + (Math.random() * s.w); pt.y = s.y + (Math.random() * s.h); if (isPointInPoly(pt, missionPoly)) v = true; att++; }
-                if(v) titans.push({ x: pt.x, y: pt.y, type: Math.random() < 0.8 ? 'basic' : 'abnormal', dead: false, skullScale: 0 });
+                if(v) titans.push({ x: pt.x, y: pt.y, type: isChristmas ? 'abnormal' : (Math.random() < 0.8 ? 'basic' : 'abnormal'), dead: false, skullScale: 0 });
             }
         });
         updateUI(); setMode('odm');
+    }
+
+    function updateSnow() {
+        sctx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
+        snowParticles.forEach(p => {
+            p.y += p.v;
+            p.x += Math.sin(p.d) * 0.5;
+            p.d += 0.01;
+            if(p.y > window.innerHeight) { p.y = -10; p.x = Math.random() * window.innerWidth; }
+            sctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+            sctx.beginPath();
+            sctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            sctx.fill();
+        });
     }
 
     function draw() {
         ctx.clearRect(0,0,800,800);
         ctx.drawImage(imgs.map, 0, 0, 800, 800);
         if(grid) ctx.drawImage(imgs.grid, 0, 0, 800, 800);
-        if (!hasStarted && !customMode) { ctx.strokeStyle = "rgba(0, 212, 255, 0.4)"; ctx.lineWidth = 2; ctx.strokeRect(startZone.x, startZone.y, startZone.w, startZone.h); }
-        if (lastPoint && !runCompleted) { ctx.fillStyle = "#ff4757"; ctx.beginPath(); ctx.arc(lastPoint.x, lastPoint.y, 6, 0, Math.PI * 2); ctx.fill(); }
+        if (!hasStarted && !customMode) { ctx.strokeStyle = isChristmas ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 212, 255, 0.4)"; ctx.lineWidth = 2; ctx.strokeRect(startZone.x, startZone.y, startZone.w, startZone.h); }
+        if (lastPoint && !runCompleted) { ctx.fillStyle = isChristmas ? "#ffffff" : "#ff4757"; ctx.beginPath(); ctx.arc(lastPoint.x, lastPoint.y, 6, 0, Math.PI * 2); ctx.fill(); }
+        
         titans.forEach(t => {
             ctx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-15, t.y-15, 30, 30);
-            if(t.dead) { if(t.skullScale > 1.0) t.skullScale -= 0.15; const s = 24 * t.skullScale; ctx.drawImage(imgs.skull, t.x - s/2, t.y - s/2, s, s); }
+            if(t.dead) { 
+                if(t.skullScale > 1.0) t.skullScale -= 0.15; 
+                const s = 24 * t.skullScale; 
+                
+                // ASSET SWAP LOGIC: Use mcpumpkin if Christmas is on, otherwise use skull
+                const killIcon = isChristmas ? imgs.mcpumpkin : imgs.skull;
+                ctx.drawImage(killIcon, t.x - s/2, t.y - s/2, s, s); 
+            }
         });
-        ctx.strokeStyle = "#00d4ff"; ctx.lineWidth = 3; ctx.lineCap = "round";
+        
+        ctx.strokeStyle = isChristmas ? "#ff3333" : "#00d4ff"; 
+        ctx.lineWidth = 3; ctx.lineCap = "round";
         [...paths, currentPath].forEach(p => { if(p.length < 2) return; ctx.beginPath(); ctx.moveTo(p[0].x, p[0].y); p.forEach(pt => ctx.lineTo(pt.x, pt.y)); ctx.stroke(); });
+        
+        if(isChristmas) updateSnow();
+
         requestAnimationFrame(draw);
     }
 
@@ -361,13 +499,11 @@
     function distToSeg(p,v,w){ const l2 = Math.pow(v.x-w.x, 2) + Math.pow(v.y-w.y, 2); if(l2 == 0) return Math.hypot(p.x-v.x, p.y-v.y); let t = Math.max(0, Math.min(1, ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y))/l2)); return Math.hypot(p.x-(v.x+t*(w.x-v.x)), p.y-(v.y+t*(w.y-v.y))); }
     function toggleGrid() { grid = !grid; }
     
-    // Fixed: Ultra-compact Export
     function exportPreset() { 
         const s = titans.map(t => `${Math.round(t.x)}.${Math.round(t.y)}.${t.type === 'basic' ? 0 : 1}`).join(',');
         prompt("Copy Data:", s); 
     }
 
-    // Fixed: Compact Import
     function importPreset() { 
         const c = prompt("Paste Data:"); 
         if(!c) return; 
@@ -382,7 +518,7 @@
 
     function exportImage() { const tc = document.createElement('canvas'); tc.width = tc.height = 800; const t = tc.getContext('2d'); t.drawImage(canvas, 0, 0); const l = document.createElement('a'); l.download = 'Map_Export.png'; l.href = tc.toDataURL(); l.click(); }
 
-    imgs.map.onload = () => { generate(); draw(); };
+    imgs.map.onload = () => { if(titans.length === 0) generate(); draw(); };
     canvas.oncontextmenu = (e) => e.preventDefault();
 </script>
 </body>
