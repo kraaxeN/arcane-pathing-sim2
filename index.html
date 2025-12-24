@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tactical Map Editor</title>
     <style>
         :root {
@@ -19,10 +19,10 @@
             font-family: 'Orbitron', sans-serif;
             margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
-            /* Added background image here */
             background: #020406 url('bg.png') no-repeat center center fixed;
             background-size: cover;
-            color: #e0e0e0; min-height: 100vh; overflow: hidden;
+            color: #e0e0e0; min-height: 100vh; overflow-x: hidden;
+            touch-action: none;
         }
 
         #boot-screen {
@@ -31,6 +31,7 @@
             flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 1s ease-out;
         }
+
         .boot-text {
             color: var(--neon-blue); font-size: 14px; margin: 5px;
             overflow: hidden; border-right: 2px solid var(--neon-blue);
@@ -45,6 +46,13 @@
             position: relative; z-index: 10;
             animation: fadeIn 1.5s ease-out;
             padding: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .main-wrapper { flex-direction: column; align-items: center; gap: 15px; padding: 10px; }
+            .side-panel { width: 90% !important; flex-direction: row !important; flex-wrap: wrap; justify-content: center; padding: 15px !important; }
+            .canvas-container { width: 95vw; height: auto; }
+            canvas#map { width: 100% !important; height: auto !important; }
         }
 
         .side-panel {
@@ -68,6 +76,14 @@
             background: #000;
         }
 
+        /* Fixed: Progress Bar outside of Map Area */
+        .progress-header {
+            background: rgba(0,0,0,0.8);
+            padding: 10px 0;
+            border-bottom: 1px solid var(--glass-border);
+            text-align: center;
+        }
+
         button, select, input {
             background: rgba(255,255,255,0.05);
             color: #fff; border: 1px solid var(--glass-border);
@@ -85,39 +101,23 @@
 
         .btn-green { color: var(--neon-green); border-color: rgba(46, 204, 113, 0.3); }
         .btn-green:hover { background: rgba(46, 204, 113, 0.15); box-shadow: 0 0 20px rgba(46, 204, 113, 0.3); }
-        
-        .btn-active { 
-            background: rgba(0, 212, 255, 0.1); 
-            border-color: var(--neon-blue); 
-            box-shadow: 0 0 15px var(--neon-blue); 
-        }
+        .btn-active { background: rgba(0, 212, 255, 0.1); border-color: var(--neon-blue); box-shadow: 0 0 15px var(--neon-blue); }
 
-        .credits-name { 
-            display: block; font-size: 18px; font-weight: 900; 
-            margin-bottom: 4px; text-align: center;
-        }
+        .credits-name { display: block; font-size: 18px; font-weight: 900; margin-bottom: 4px; text-align: center; }
         .glow-purple { color: #fff; text-shadow: 0 0 10px var(--neon-purple); }
         .glow-green { color: #fff; text-shadow: 0 0 10px var(--neon-green); }
         .glow-red { color: #fff; text-shadow: 0 0 10px var(--neon-red); }
 
-        .banner-link {
-            margin-top: auto; border-radius: 12px; overflow: hidden;
-            border: 2px solid transparent; transition: 0.3s;
-            background: linear-gradient(45deg, #00d4ff, #bc13fe); padding: 2px;
-        }
+        .banner-link { margin-top: auto; border-radius: 12px; overflow: hidden; border: 2px solid transparent; transition: 0.3s; background: linear-gradient(45deg, #00d4ff, #bc13fe); padding: 2px; }
 
         #mission-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 10000;
             justify-content: center; align-items: center; backdrop-filter: blur(12px);
         }
-        .modal-box {
-            background: #050505; border: 1px solid var(--neon-blue); padding: 40px;
-            border-radius: 24px; text-align: center; box-shadow: 0 0 100px rgba(0, 212, 255, 0.2);
-        }
+        .modal-box { background: #050505; border: 1px solid var(--neon-blue); padding: 40px; border-radius: 24px; text-align: center; box-shadow: 0 0 100px rgba(0, 212, 255, 0.2); }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        
         canvas { display: block; cursor: crosshair; }
         hr { border: 0; border-top: 1px solid var(--glass-border); margin: 10px 0; }
     </style>
@@ -165,9 +165,10 @@
     </div>
 
     <div class="canvas-container">
-        <div style="position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; z-index: 20;">
-            <div style="font-size: 10px; letter-spacing: 2px;">PROGRESS</div>
-            <span id="sync-val" style="font-size: 40px; color: var(--neon-green); font-weight: 900; text-shadow: 0 0 20px var(--neon-green);">0</span>%
+        <div class="progress-header">
+            <span style="font-size: 10px; letter-spacing: 2px; opacity: 0.7;">PROGRESS:</span>
+            <span id="sync-val" style="font-size: 30px; color: var(--neon-green); font-weight: 900; text-shadow: 0 0 15px var(--neon-green);">0</span>
+            <span style="color: var(--neon-green); font-weight: 900;">%</span>
         </div>
         <canvas id="map" width="800" height="800"></canvas>
     </div>
@@ -221,6 +222,19 @@
     const startZone = { x: 350, y: 720, w: 100, h: 80 };
     const missionPoly = [{x: 320, y: 25}, {x: 600, y: 35}, {x: 765, y: 115}, {x: 775, y: 440}, {x: 770, y: 685}, {x: 630, y: 685}, {x: 520, y: 600}, {x: 400, y: 630}, {x: 180, y: 650}, {x: 115, y: 480}, {x: 100, y: 360}, {x: 230, y: 130}, {x: 290, y: 35}];
 
+    function getCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+        } else {
+            clientX = e.clientX; clientY = e.clientY;
+        }
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    }
+
     function isPointInPoly(pt, poly) {
         let isInside = false;
         for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -229,11 +243,7 @@
         return isInside;
     }
 
-    function createBlankMap() {
-        titans = [];
-        resetRun();
-        updateUI();
-    }
+    function createBlankMap() { titans = []; resetRun(); updateUI(); }
 
     function openModal() {
         document.getElementById('modal-time').textContent = document.getElementById('display-time').textContent;
@@ -254,53 +264,56 @@
 
     function closeModal() { document.getElementById('mission-modal').style.display = 'none'; resetRun(); }
 
-    canvas.onmousedown = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left, y = e.clientY - rect.top;
-        if (e.button === 2 && customMode) { titans = titans.filter(t => Math.hypot(t.x - x, t.y - y) > 20); updateUI(); return; }
+    function handleDown(e) {
+        if (e.touches) e.preventDefault();
+        const {x, y} = getCoords(e);
+        if (!e.touches && e.button === 2 && customMode) { titans = titans.filter(t => Math.hypot(t.x - x, t.y - y) > 20); updateUI(); return; }
         if (customMode) {
             if (isPointInPoly({x, y}, missionPoly)) { titans.push({x, y, type: document.getElementById('titanType').value, dead: false, skullScale: 0}); updateUI(); }
         } else {
             if (!hasStarted) {
                 if (x >= startZone.x && x <= startZone.x + startZone.w && y >= startZone.y && y <= startZone.y + startZone.h) {
-                    hasStarted = true; drawing = true; currentPath = [{x, y}]; startTimer();
-                    document.getElementById('status-msg').textContent = "ACTIVE";
+                    hasStarted = true; drawing = true; currentPath = [{x, y}]; startTimer(); document.getElementById('status-msg').textContent = "ACTIVE";
                 }
-            } else if (lastPoint && Math.hypot(x - lastPoint.x, y - lastPoint.y) < 45) { drawing = true; currentPath = [{x, y}]; }
+            } else if (lastPoint && Math.hypot(x - lastPoint.x, y - lastPoint.y) < 55) { drawing = true; currentPath = [{x, y}]; }
         }
-    };
+    }
 
-    function startTimer() { startTime = Date.now(); timerInterval = setInterval(() => { document.getElementById('display-time').textContent = ((Date.now() - startTime) / 1000).toFixed(2) + "s"; }, 10); }
-    function stopTimer() { clearInterval(timerInterval); }
-
-    canvas.onmousemove = (e) => {
+    function handleMove(e) {
         if (!drawing) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        if (e.touches) e.preventDefault();
+        const {x, y} = getCoords(e);
         currentPath.push({x, y});
         if (currentPath.length >= 2) {
             const p1 = currentPath[currentPath.length-2], p2 = currentPath[currentPath.length-1];
             titans.forEach(t => { if(!t.dead && distToSeg(t, p1, p2) < 22) { t.dead = true; t.skullScale = 3.0; } });
         }
         updateSync();
-    };
+    }
 
-    window.onmouseup = () => {
+    function handleUp() {
         if(drawing) {
             paths.push([...currentPath]); lastPoint = currentPath[currentPath.length - 1]; currentPath = []; drawing = false;
-            if (document.getElementById('sync-val').textContent === "100" && titans.length > 0 && !runCompleted) {
-                stopTimer(); runCompleted = true; openModal();
-            }
+            if (document.getElementById('sync-val').textContent === "100" && titans.length > 0 && !runCompleted) { stopTimer(); runCompleted = true; openModal(); }
         }
         updateUI();
-    };
+    }
+
+    canvas.addEventListener('mousedown', handleDown);
+    canvas.addEventListener('touchstart', handleDown, {passive: false});
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('touchmove', handleMove, {passive: false});
+    window.addEventListener('mouseup', handleUp);
+    window.addEventListener('touchend', handleUp);
+
+    function startTimer() { startTime = Date.now(); timerInterval = setInterval(() => { document.getElementById('display-time').textContent = ((Date.now() - startTime) / 1000).toFixed(2) + "s"; }, 10); }
+    function stopTimer() { clearInterval(timerInterval); }
 
     function undo() {
         if (paths.length > 0) {
             paths.pop(); titans.forEach(t => { t.dead = false; t.skullScale = 0; });
             paths.forEach(p => { for(let i=0; i<p.length-1; i++) { titans.forEach(t => { if(!t.dead && distToSeg(t, p[i], p[i+1]) < 22) { t.dead = true; t.skullScale = 1.0; } }); } });
-            if (paths.length > 0) { lastPoint = paths[paths.length - 1].slice(-1)[0]; } 
-            else { lastPoint = null; hasStarted = false; stopTimer(); document.getElementById('display-time').textContent = "0.00s"; }
+            if (paths.length > 0) { lastPoint = paths[paths.length - 1].slice(-1)[0]; } else { lastPoint = null; hasStarted = false; stopTimer(); document.getElementById('display-time').textContent = "0.00s"; }
             runCompleted = false; updateUI();
         }
     }
@@ -347,8 +360,26 @@
     function updateSync() { const k = titans.filter(t => t.dead).length; document.getElementById('sync-val').textContent = titans.length > 0 ? Math.floor((k / titans.length) * 100) : 0; }
     function distToSeg(p,v,w){ const l2 = Math.pow(v.x-w.x, 2) + Math.pow(v.y-w.y, 2); if(l2 == 0) return Math.hypot(p.x-v.x, p.y-v.y); let t = Math.max(0, Math.min(1, ((p.x-v.x)*(w.x-v.x) + (p.y-v.y)*(w.y-v.y))/l2)); return Math.hypot(p.x-(v.x+t*(w.x-v.x)), p.y-(v.y+t*(w.y-v.y))); }
     function toggleGrid() { grid = !grid; }
-    function exportPreset() { const s = titans.map(t => [Math.round(t.x), Math.round(t.y), t.type === 'basic' ? 0 : 1]); prompt("Copy Data:", btoa(JSON.stringify(s))); }
-    function importPreset() { const c = prompt("Paste Data:"); if(!c) return; try { titans = JSON.parse(atob(c)).map(t => ({x:t[0], y:t[1], type:t[2]===0?'basic':'abnormal', dead:false, skullScale:0})); resetRun(); } catch(e){alert("Error");} }
+    
+    // Fixed: Ultra-compact Export
+    function exportPreset() { 
+        const s = titans.map(t => `${Math.round(t.x)}.${Math.round(t.y)}.${t.type === 'basic' ? 0 : 1}`).join(',');
+        prompt("Copy Data:", s); 
+    }
+
+    // Fixed: Compact Import
+    function importPreset() { 
+        const c = prompt("Paste Data:"); 
+        if(!c) return; 
+        try { 
+            titans = c.split(',').map(item => {
+                const [x, y, type] = item.split('.');
+                return { x: parseInt(x), y: parseInt(y), type: type === '0' ? 'basic' : 'abnormal', dead: false, skullScale: 0 };
+            });
+            resetRun(); 
+        } catch(e){ alert("Invalid Data Format"); } 
+    }
+
     function exportImage() { const tc = document.createElement('canvas'); tc.width = tc.height = 800; const t = tc.getContext('2d'); t.drawImage(canvas, 0, 0); const l = document.createElement('a'); l.download = 'Map_Export.png'; l.href = tc.toDataURL(); l.click(); }
 
     imgs.map.onload = () => { generate(); draw(); };
