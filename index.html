@@ -178,6 +178,8 @@
 </head>
 <body>
 
+<audio id="bg-music" src="kraxsong.mp3" loop autoplay></audio>
+
 <canvas id="bg-snow-layer"></canvas>
 
 <div id="boot-screen">
@@ -197,6 +199,7 @@
     <div class="side-panel">
         <button onclick="undo()">Undo</button>
         <button onclick="resetRun()" style="color:var(--neon-red)">Reset Run</button>
+        <button id="mute-btn" onclick="toggleMute()" style="border-color: var(--neon-purple); color: var(--neon-purple);">Mute Music</button>
         
         <div style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.2);">
             <div style="font-size: 10px; opacity: 0.6; margin-bottom: 5px;">SPAWN COUNT:</div>
@@ -256,6 +259,28 @@
 </div>
 
 <script>
+    // AUDIO LOGIC
+    const music = document.getElementById('bg-music');
+    const muteBtn = document.getElementById('mute-btn');
+
+    function toggleMute() {
+        if (music.muted) {
+            music.muted = false;
+            muteBtn.textContent = "Mute Music";
+            music.play().catch(() => {}); // Attempt play in case it was blocked
+        } else {
+            music.muted = true;
+            muteBtn.textContent = "Unmute Music";
+        }
+    }
+
+    // Attempt to play music on first click anywhere (bypass autoplay blocks)
+    document.addEventListener('click', () => {
+        if (music.paused && !music.muted) {
+            music.play().catch(e => console.log("Autoplay blocked until user interaction."));
+        }
+    }, { once: true });
+
     window.addEventListener('load', () => {
         setTimeout(() => {
             document.getElementById('boot-screen').style.opacity = '0';
