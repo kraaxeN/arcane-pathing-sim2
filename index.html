@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tactical Map Editor - Christmas Edition</title>
+    <title>Tactical Map Editor</title>
     <style>
         :root {
             --neon-blue: #00d4ff;
@@ -13,45 +13,6 @@
             --panel-bg: rgba(10, 10, 10, 0.85);
             --glass-border: rgba(255, 255, 255, 0.1);
             --accent-glow: 0 0 20px rgba(0, 212, 255, 0.3);
-        }
-
-        /* CANDY CANE CHRISTMAS MODE OVERRIDES */
-        body.christmas-mode {
-            --neon-blue: #ffffff; 
-            --neon-green: #ffffff; 
-            --neon-red: #ff3333;   /* Candy Red */
-            --accent-glow: 0 0 25px rgba(255, 51, 51, 0.4);
-            background: #050505 url('bgsnowy.png') no-repeat center center fixed !important;
-            background-size: cover !important;
-        }
-
-        /* Increased Transparency for Christmas Panels */
-        body.christmas-mode .side-panel {
-            border: 2px solid #ff3333;
-            background: rgba(20, 10, 10, 0.6) !important; /* More see-through for BG */
-            backdrop-filter: blur(10px);
-        }
-
-        #bg-snow-layer {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        body.christmas-mode button:hover {
-            background: repeating-linear-gradient(
-                45deg,
-                #ff3333,
-                #ff3333 10px,
-                #ffffff 10px,
-                #ffffff 20px
-            ) !important;
-            color: #000 !important;
-            border-color: #ffffff !important;
-            box-shadow: 0 0 15px #ffffff;
-            text-shadow: none;
         }
 
         /* STANDARD STYLES */
@@ -149,13 +110,6 @@
             box-shadow: 0 0 15px var(--neon-blue); 
         }
 
-        .btn-xmas {
-            background: linear-gradient(45deg, #ff3333, #ffffff);
-            border: 1px solid #ff3333 !important;
-            color: #000 !important;
-            font-weight: 900;
-        }
-
         .credits-name { display: block; font-size: 18px; font-weight: 900; margin-bottom: 4px; text-align: center; }
         .glow-purple { color: #fff; text-shadow: 0 0 10px var(--neon-purple); }
         .glow-green { color: #fff; text-shadow: 0 0 10px var(--neon-green); }
@@ -178,10 +132,6 @@
 </head>
 <body>
 
-<audio id="bg-music" src="kraxsong.mp3" loop autoplay></audio>
-
-<canvas id="bg-snow-layer"></canvas>
-
 <div id="boot-screen">
     <div class="boot-text">INITIALIZING...</div>
 </div>
@@ -199,7 +149,6 @@
     <div class="side-panel">
         <button onclick="undo()">Undo</button>
         <button onclick="resetRun()" style="color:var(--neon-red)">Reset Run</button>
-        <button id="mute-btn" onclick="toggleMute()" style="border-color: var(--neon-purple); color: var(--neon-purple);">Mute Music</button>
         
         <div style="padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.2);">
             <div style="font-size: 10px; opacity: 0.6; margin-bottom: 5px;">SPAWN COUNT:</div>
@@ -219,7 +168,6 @@
             <option value="basic">Basic</option>
             <option value="abnormal">Abnormal</option>
         </select>
-        <button onclick="toggleChristmas()" class="btn-xmas">🎄 Christmas Mode</button>
         <div id="status-msg" style="font-size: 10px; color: var(--neon-blue); text-align: center;">READY</div>
     </div>
 
@@ -259,28 +207,6 @@
 </div>
 
 <script>
-    // AUDIO LOGIC
-    const music = document.getElementById('bg-music');
-    const muteBtn = document.getElementById('mute-btn');
-
-    function toggleMute() {
-        if (music.muted) {
-            music.muted = false;
-            muteBtn.textContent = "Mute Music";
-            music.play().catch(() => {}); // Attempt play in case it was blocked
-        } else {
-            music.muted = true;
-            muteBtn.textContent = "Unmute Music";
-        }
-    }
-
-    // Attempt to play music on first click anywhere (bypass autoplay blocks)
-    document.addEventListener('click', () => {
-        if (music.paused && !music.muted) {
-            music.play().catch(e => console.log("Autoplay blocked until user interaction."));
-        }
-    }, { once: true });
-
     window.addEventListener('load', () => {
         setTimeout(() => {
             document.getElementById('boot-screen').style.opacity = '0';
@@ -288,29 +214,8 @@
         }, 1000);
     });
 
-    let titans = [], paths = [], currentPath = [], drawing = false, grid = true, customMode = false, isChristmas = false;
+    let titans = [], paths = [], currentPath = [], drawing = false, grid = true, customMode = false;
     let runCompleted = false, lastPoint = null, hasStarted = false, startTime = null, timerInterval = null;
-
-    const snowCanvas = document.getElementById('bg-snow-layer');
-    const sctx = snowCanvas.getContext('2d');
-    const snowParticles = [];
-    
-    function resizeSnow() {
-        snowCanvas.width = window.innerWidth;
-        snowCanvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeSnow);
-    resizeSnow();
-
-    for(let i=0; i<150; i++) {
-        snowParticles.push({
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
-            r: Math.random() * 3 + 1,
-            d: Math.random() * 1,
-            v: Math.random() * 1 + 0.5
-        });
-    }
 
     const canvas = document.getElementById('map');
     const ctx = canvas.getContext('2d');
@@ -322,32 +227,16 @@
         basic: new Image(), 
         abnormal: new Image(), 
         skull: new Image(), 
-        mcpumpkin: new Image(),
         grid: new Image() 
     };
     imgs.map.src = 'outskirts.png'; 
     imgs.basic.src = 'basic.png';
     imgs.abnormal.src = 'abnormal.png'; 
     imgs.skull.src = 'skull.png'; 
-    imgs.mcpumpkin.src = 'mcpumpkin.png';
     imgs.grid.src = 'grid.png';
 
     const startZone = { x: 350, y: 720, w: 100, h: 80 };
     const missionPoly = [{x: 320, y: 25}, {x: 600, y: 35}, {x: 765, y: 115}, {x: 775, y: 440}, {x: 770, y: 685}, {x: 630, y: 685}, {x: 520, y: 600}, {x: 400, y: 630}, {x: 180, y: 650}, {x: 115, y: 480}, {x: 100, y: 360}, {x: 230, y: 130}, {x: 290, y: 35}];
-
-    function toggleChristmas() {
-        isChristmas = !isChristmas;
-        if (isChristmas) {
-            document.body.classList.add('christmas-mode');
-            imgs.map.src = 'outskirtssnow.png';
-            generate(); // Refresh to show only abnormals
-        } else {
-            document.body.classList.remove('christmas-mode');
-            imgs.map.src = 'outskirts.png';
-            sctx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
-        }
-        updateUI();
-    }
 
     function getCoords(e) {
         const rect = canvas.getBoundingClientRect();
@@ -379,12 +268,10 @@
         titans.forEach(t => {
             mCtx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-15, t.y-15, 30, 30);
             if(t.dead) {
-                // Asset swap for Christmas in modal
-                const killIcon = isChristmas ? imgs.mcpumpkin : imgs.skull;
-                mCtx.drawImage(killIcon, t.x-12, t.y-12, 24, 24);
+                mCtx.drawImage(imgs.skull, t.x-12, t.y-12, 24, 24);
             }
         });
-        mCtx.strokeStyle = isChristmas ? "#ff3333" : "#00d4ff"; 
+        mCtx.strokeStyle = "#00d4ff"; 
         mCtx.lineWidth = 4;
         paths.forEach(p => {
             if(p.length < 2) return;
@@ -402,7 +289,7 @@
         if (!e.touches && e.button === 2 && customMode) { titans = titans.filter(t => Math.hypot(t.x - x, t.y - y) > 20); updateUI(); return; }
         if (customMode) {
             if (isPointInPoly({x, y}, missionPoly)) { 
-                const type = isChristmas ? 'abnormal' : document.getElementById('titanType').value;
+                const type = document.getElementById('titanType').value;
                 titans.push({x, y, type: type, dead: false, skullScale: 0}); 
                 updateUI(); 
             }
@@ -465,51 +352,32 @@
             for(let i=0; i < sc; i++) {
                 let pt = {x: 0, y: 0}, v = false, att = 0;
                 while(!v && att < 50) { pt.x = s.x + (Math.random() * s.w); pt.y = s.y + (Math.random() * s.h); if (isPointInPoly(pt, missionPoly)) v = true; att++; }
-                if(v) titans.push({ x: pt.x, y: pt.y, type: isChristmas ? 'abnormal' : (Math.random() < 0.8 ? 'basic' : 'abnormal'), dead: false, skullScale: 0 });
+                if(v) titans.push({ x: pt.x, y: pt.y, type: (Math.random() < 0.8 ? 'basic' : 'abnormal'), dead: false, skullScale: 0 });
             }
         });
         updateUI(); setMode('odm');
-    }
-
-    function updateSnow() {
-        sctx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
-        snowParticles.forEach(p => {
-            p.y += p.v;
-            p.x += Math.sin(p.d) * 0.5;
-            p.d += 0.01;
-            if(p.y > window.innerHeight) { p.y = -10; p.x = Math.random() * window.innerWidth; }
-            sctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-            sctx.beginPath();
-            sctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            sctx.fill();
-        });
     }
 
     function draw() {
         ctx.clearRect(0,0,800,800);
         ctx.drawImage(imgs.map, 0, 0, 800, 800);
         if(grid) ctx.drawImage(imgs.grid, 0, 0, 800, 800);
-        if (!hasStarted && !customMode) { ctx.strokeStyle = isChristmas ? "rgba(255, 255, 255, 0.4)" : "rgba(0, 212, 255, 0.4)"; ctx.lineWidth = 2; ctx.strokeRect(startZone.x, startZone.y, startZone.w, startZone.h); }
-        if (lastPoint && !runCompleted) { ctx.fillStyle = isChristmas ? "#ffffff" : "#ff4757"; ctx.beginPath(); ctx.arc(lastPoint.x, lastPoint.y, 6, 0, Math.PI * 2); ctx.fill(); }
+        if (!hasStarted && !customMode) { ctx.strokeStyle = "rgba(0, 212, 255, 0.4)"; ctx.lineWidth = 2; ctx.strokeRect(startZone.x, startZone.y, startZone.w, startZone.h); }
+        if (lastPoint && !runCompleted) { ctx.fillStyle = "#ff4757"; ctx.beginPath(); ctx.arc(lastPoint.x, lastPoint.y, 6, 0, Math.PI * 2); ctx.fill(); }
         
         titans.forEach(t => {
             ctx.drawImage(t.type === 'basic' ? imgs.basic : imgs.abnormal, t.x-15, t.y-15, 30, 30);
             if(t.dead) { 
                 if(t.skullScale > 1.0) t.skullScale -= 0.15; 
                 const s = 24 * t.skullScale; 
-                
-                // ASSET SWAP LOGIC: Use mcpumpkin if Christmas is on, otherwise use skull
-                const killIcon = isChristmas ? imgs.mcpumpkin : imgs.skull;
-                ctx.drawImage(killIcon, t.x - s/2, t.y - s/2, s, s); 
+                ctx.drawImage(imgs.skull, t.x - s/2, t.y - s/2, s, s); 
             }
         });
         
-        ctx.strokeStyle = isChristmas ? "#ff3333" : "#00d4ff"; 
+        ctx.strokeStyle = "#00d4ff"; 
         ctx.lineWidth = 3; ctx.lineCap = "round";
         [...paths, currentPath].forEach(p => { if(p.length < 2) return; ctx.beginPath(); ctx.moveTo(p[0].x, p[0].y); p.forEach(pt => ctx.lineTo(pt.x, pt.y)); ctx.stroke(); });
         
-        if(isChristmas) updateSnow();
-
         requestAnimationFrame(draw);
     }
 
