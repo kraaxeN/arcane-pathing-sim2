@@ -345,16 +345,34 @@
 
     function generate() {
         resetRun(); titans = [];
-        const sectors = [{ x: 120, y: 410, w: 160, h: 220, weight: 0.15 }, { x: 300, y: 410, w: 180, h: 220, weight: 0.15 }, { x: 520, y: 410, w: 140, h: 250, weight: 0.15 }, { x: 680, y: 410, w: 100, h: 250, weight: 0.15 }, { x: 150, y: 50,  w: 600, h: 320, weight: 0.40 }];
-        const count = parseInt(document.getElementById('spawnCount').value) || 40;
-        sectors.forEach(s => {
-            const sc = Math.floor(count * s.weight);
+        const sectors = [
+            { x: 120, y: 410, w: 160, h: 220, weight: 0.15 }, 
+            { x: 300, y: 410, w: 180, h: 220, weight: 0.15 }, 
+            { x: 520, y: 410, w: 140, h: 250, weight: 0.15 }, 
+            { x: 680, y: 410, w: 100, h: 250, weight: 0.15 }, 
+            { x: 150, y: 50,  w: 600, h: 320, weight: 0.40 }
+        ];
+        
+        const targetCount = parseInt(document.getElementById('spawnCount').value) || 40;
+        let spawnedSoFar = 0;
+
+        sectors.forEach((s, index) => {
+            // Determine count for this sector based on weight, or fill remaining for the last sector
+            let sc = (index === sectors.length - 1) ? (targetCount - spawnedSoFar) : Math.floor(targetCount * s.weight);
+            
             for(let i=0; i < sc; i++) {
-                let pt = {x: 0, y: 0}, v = false, att = 0;
-                while(!v && att < 50) { pt.x = s.x + (Math.random() * s.w); pt.y = s.y + (Math.random() * s.h); if (isPointInPoly(pt, missionPoly)) v = true; att++; }
-                if(v) titans.push({ x: pt.x, y: pt.y, type: (Math.random() < 0.8 ? 'basic' : 'abnormal'), dead: false, skullScale: 0 });
+                let pt = {x: 0, y: 0}, v = false;
+                // Infinite loop until point is inside polygon to guarantee count
+                while(!v) { 
+                    pt.x = s.x + (Math.random() * s.w); 
+                    pt.y = s.y + (Math.random() * s.h); 
+                    if (isPointInPoly(pt, missionPoly)) v = true; 
+                }
+                titans.push({ x: pt.x, y: pt.y, type: (Math.random() < 0.8 ? 'basic' : 'abnormal'), dead: false, skullScale: 0 });
+                spawnedSoFar++;
             }
         });
+
         updateUI(); setMode('odm');
     }
 
